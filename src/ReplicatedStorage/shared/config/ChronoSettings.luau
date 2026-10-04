@@ -46,6 +46,7 @@ return {
 	validation = {
 		maxLatency = 0.6,
 		cooldownTolerance = 0.08,
+		latencySmoothing = 0.3,
 	},
 
 	speedCheck = {

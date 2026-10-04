@@ -2,13 +2,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local Replication = require(ReplicatedStorage.shared.simulation.Replication)
+local Clock = require(ReplicatedStorage.shared.utils.Clock)
 
 local speedCheck = ChronoSettings.speedCheck
+local validation = ChronoSettings.validation
 local flatMask = Vector3.new(1, 0, 1)
 
 local ReplicationService = {}
 
 ReplicationService.Strikes = {}
+ReplicationService.Latency = {}
 
 function ReplicationService:init()
 	local Chrono = Replication.Start()
@@ -49,8 +52,22 @@ function ReplicationService:CheckSpeed(player, entity, cframe, arriveTime, Chron
 	return true
 end
 
+-- Smoothed one-way client -> server latency, sampled from client-stamped server times
+-- (workspace:GetServerTimeNow() on the client) carried by attack and dodge requests.
+function ReplicationService:RecordLatency(player, sentAt)
+	local sample = math.clamp(Clock.Now() - sentAt, 0, validation.maxLatency)
+	local current = self.Latency[player]
+
+	self.Latency[player] = if current then current + (sample - current) * validation.latencySmoothing else sample
+end
+
+function ReplicationService:GetLatency(player)
+	return self.Latency[player] or math.clamp(player:GetNetworkPing(), 0, validation.maxLatency)
+end
+
 function ReplicationService:PlayerRemoving(player)
 	self.Strikes[player] = nil
+	self.Latency[player] = nil
 end
 
 return ReplicationService

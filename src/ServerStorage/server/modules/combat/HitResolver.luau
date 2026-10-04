@@ -131,8 +131,11 @@ function HitResolver:Evaluate(request, target, boxCFrame, size, attackerCFrame, 
 			attack = request.attackName,
 			damage = weapon:ComputeDamage(request.attacker, info, request.attack),
 			position = targetCFrame.Position,
-			-- When the hit happened on the target's own timeline, for late-dodge checks.
+			-- When the hit happened on the target's own timeline, and when the attacker swung, for
+			-- late-dodge checks.
 			time = serverTime - delay,
+			swingTime = serverTime,
+			attackerLatency = request.latency,
 		},
 	}
 end

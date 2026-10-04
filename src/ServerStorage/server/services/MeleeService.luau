@@ -19,6 +19,10 @@ local validation = ChronoSettings.validation
 
 local MeleeService = {}
 
+MeleeService.Dependencies = {
+	Replication = "ReplicationService",
+}
+
 MeleeService.Remotes = {
 	Hit = "Event",
 	Attack = "Event",
@@ -64,6 +68,7 @@ function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, 
 
 	local now = Clock.Now()
 	local latency = math.clamp(now - start, 0, validation.maxLatency)
+	self.Replication:RecordLatency(player, start)
 	start = math.clamp(start, now - validation.maxLatency, now)
 
 	local history = self.AttackHistory[player]
@@ -151,16 +156,35 @@ function MeleeService:GetReactionWindow(hit)
 	return evasion and evasion.reactionWindow or 0
 end
 
--- Hits are held for the weapon's reaction window before damage, so a dodge started just after being
--- hit still evades it. The victim's latency is added so a dodge sent in time has arrived.
+-- The latest a dodge may start and still evade a hit: reactionWindow after the swing could first be
+-- seen by the victim. A player victim sees it late by the attacker's latency, their own latency and
+-- Chrono's interpolation buffer, so measuring from the hit itself would leave them almost no window.
+function MeleeService:GetDodgeDeadline(hit, victim)
+	local seenAt = hit.swingTime + hit.attackerLatency
+
+	if victim then
+		seenAt += self.Replication:GetLatency(victim) + ChronoSettings.config.MAX_BUFFER
+	end
+
+	return seenAt + self:GetReactionWindow(hit)
+end
+
+-- Hits are held until the dodge deadline has passed (plus the victim's latency, so a dodge sent in
+-- time has arrived) before damage, so a dodge started in reaction to the hit still evades it.
 function MeleeService:HoldHit(hit, batch)
 	local victim = Players:GetPlayerFromCharacter(hit.target)
 
 	hit.time = hit.time or Clock.Now()
+	hit.swingTime = hit.swingTime or hit.time
+	hit.attackerLatency = hit.attackerLatency or 0
+
+	local deadline = self:GetDodgeDeadline(hit, victim)
+
 	table.insert(self.PendingHits, {
 		hit = hit,
 		batch = batch,
-		releaseAt = hit.time + self:GetReactionWindow(hit) + (if victim then victim:GetNetworkPing() else 0),
+		deadline = deadline,
+		releaseAt = deadline + (if victim then self.Replication:GetLatency(victim) else 0),
 	})
 
 	if batch then
@@ -168,14 +192,14 @@ function MeleeService:HoldHit(hit, batch)
 	end
 end
 
-function MeleeService:DodgedLate(hit)
+function MeleeService:DodgedLate(hit, deadline)
 	local dodgeStart = hit.target:GetAttribute(movementAttributes.dodgeStart)
 
-	return dodgeStart ~= nil and dodgeStart >= hit.time and dodgeStart <= hit.time + self:GetReactionWindow(hit)
+	return dodgeStart ~= nil and dodgeStart >= hit.time and dodgeStart <= deadline
 end
 
-function MeleeService:ReleaseHit(hit, batch)
-	if self:DodgedLate(hit) then
+function MeleeService:ReleaseHit(hit, batch, deadline)
+	if self:DodgedLate(hit, deadline) then
 		if batch then
 			table.insert(batch.evaded, hit.target)
 		end
@@ -206,7 +230,7 @@ function MeleeService:Update()
 
 		if now >= pending.releaseAt then
 			table.remove(self.PendingHits, index)
-			self:ReleaseHit(pending.hit, pending.batch)
+			self:ReleaseHit(pending.hit, pending.batch, pending.deadline)
 		end
 	end
 

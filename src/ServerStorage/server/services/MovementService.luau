@@ -12,6 +12,10 @@ local validation = ChronoSettings.validation
 
 local MovementService = {}
 
+MovementService.Dependencies = {
+	Replication = "ReplicationService",
+}
+
 MovementService.Remotes = {
 	Dodge = "Event",
 }
@@ -43,6 +47,7 @@ function MovementService:OnDodge(player, dodgeName, start)
 	end
 
 	local now = Clock.Now()
+	self.Replication:RecordLatency(player, start)
 	start = math.clamp(start, now - validation.maxLatency, now)
 
 	local previous = self.DodgeHistory[player]
