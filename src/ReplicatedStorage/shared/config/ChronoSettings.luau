@@ -17,6 +17,9 @@ return {
 		NPC = {
 			BUFFER = 0,
 			TICK_RATE = 1 / 30,
+			-- NPCs are server-simulated, so Roblox already replicates them smoothly. Chrono is only used
+			-- for the server-side snapshot history that lag compensation rewinds.
+			INTERPOLATION_MODE = "NONE",
 			STORE_SNAPSHOTS = true,
 			MODEL_REPLICATION_MODE = "NATIVE",
 			HALF_TICK_DISTANCE = math.huge,
