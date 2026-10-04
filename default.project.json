@@ -113,11 +113,15 @@
             ]
           }
         }
-      },
-      "$attributes": {
-        "Rojo_Target_CurrentCamera": "2eb3127498ae519b0ad279200005b7ff"
-      },
-      "$path": "src/Workspace"
+      }
     }
+  },
+  "globIgnorePaths": [
+    "src/ServerStorage/MapBuilder/Assets.rbxm"
+  ],
+  "syncbackRules": {
+    "ignoreTrees": [
+      "ServerStorage/MapBuilder/Assets"
+    ]
   }
 }
