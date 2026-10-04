@@ -8,12 +8,10 @@ local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementS
 local AgentRegistry = require(ReplicatedStorage.shared.simulation.AgentRegistry)
 local Stepper = require(ReplicatedStorage.shared.simulation.Stepper)
 local Clock = require(ReplicatedStorage.shared.utils.Clock)
-local DebugConfig = require(ReplicatedStorage.shared.config.DebugConfig)
 local HitResolver = require(ServerStorage.server.modules.combat.HitResolver)
 
 local attributes = MeleeConfig.attributes
 local validation = ChronoSettings.validation
-local validationLog = DebugConfig.validation
 
 local MeleeService = {}
 
@@ -37,19 +35,13 @@ function MeleeService:Start()
 	end)
 
 	self.Remotes.Attack:Connect(function(player, attackName, comboIndex, attackId, start, delays)
-		local rejection = self:OnAttack(player, attackName, comboIndex, attackId, start, delays)
-
-		if validationLog.logEnabled then
-			print(validationLog.prefix, "Attack", if rejection then "REJECTED" else "accepted", player.Name, attackName, "id", attackId,
-				"latency", if type(start) == "number" then ("%.3f"):format(Clock.Now() - start) else "?", rejection or "")
-		end
+		self:OnAttack(player, attackName, comboIndex, attackId, start, delays)
 	end)
 end
 
--- Returns a rejection reason, or nil when the attack is accepted.
 function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, delays)
 	if type(attackName) ~= "string" or type(attackId) ~= "number" or type(start) ~= "number" then
-		return "malformed"
+		return
 	end
 
 	local character = player.Character
@@ -58,7 +50,7 @@ function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, 
 	local attack = weapon and weapon:GetAttack(attackName)
 
 	if not attack or not humanoid or humanoid.Health <= 0 then
-		return "no weapon, attack or living humanoid"
+		return
 	end
 
 	local now = Clock.Now()
@@ -67,11 +59,11 @@ function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, 
 	local history = self.AttackHistory[player]
 
 	if history and start < history.ready - validation.cooldownTolerance then
-		return ("cooldown (%.3fs early)"):format(history.ready - start)
+		return
 	end
 
 	if not weapon.Config.canAttackWhileDodging and MovementSimulation.GetDodge(character, start) then
-		return "dodging"
+		return
 	end
 
 	local id = if history then math.max(attackId, history.id + 1) else attackId

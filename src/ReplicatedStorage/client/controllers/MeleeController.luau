@@ -10,7 +10,6 @@ local MeleePresenter = require(ReplicatedStorage.client.modules.melee.MeleePrese
 local HitFlash = require(ReplicatedStorage.client.modules.melee.HitFlash)
 local AnimationTracks = require(ReplicatedStorage.client.modules.animation.AnimationTracks)
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
-local DebugConfig = require(ReplicatedStorage.shared.config.DebugConfig)
 local Replication = require(ReplicatedStorage.shared.simulation.Replication)
 local Stepper = require(ReplicatedStorage.shared.simulation.Stepper)
 local LocalInput = require(ReplicatedStorage.client.modules.input.LocalInput)
@@ -71,10 +70,6 @@ function MeleeController:Step(now)
 
 	if started then
 		self.Remotes.Attack:Fire(started.attack, started.combo, started.id, started.start, self:GetViewDelays(character))
-
-		if DebugConfig.validation.logEnabled then
-			print(DebugConfig.validation.prefix, "Attack sent", started.attack, "id", started.id)
-		end
 	end
 end
 

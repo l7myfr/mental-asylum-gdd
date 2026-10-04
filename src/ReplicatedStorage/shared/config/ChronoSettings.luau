@@ -1,27 +1,14 @@
--- Side-by-side test: listed players keep Roblox's default replication, everyone else uses Chrono.
--- Chrono's death relay only runs in AUTOMATIC mode, so client-side deaths (reset, void) of Chrono
--- players do not reach the server while this is enabled.
-local comparison = {
-	enabled = true,
-	nativePlayers = {
-		Player2 = true,
-	},
-}
-
 return {
 	config = {
 		CHECK_NEW_VERSION = false,
 		-- LOW also prints idle/respawn interpolation notices that are expected.
 		WARNING_SEVERITY = "MEDIUM",
-		PLAYER_REPLICATION = if comparison.enabled then "CUSTOM" else "AUTOMATIC",
+		PLAYER_REPLICATION = "AUTOMATIC",
 		-- Chrono's docs: buffer ~2x the snapshot interval (33ms at 60Hz), max 2-3x the minimum.
 		-- The buffer still grows dynamically up to MAX_BUFFER for jittery connections.
 		MIN_BUFFER = 0.035,
 		MAX_BUFFER = 0.105,
 	},
-
-	comparison = comparison,
-	playerEntityType = "PLAYER",
 
 	entityTypes = {
 		PLAYER = {

@@ -49,20 +49,8 @@ function ReplicationService:CheckSpeed(player, entity, cframe, arriveTime, Chron
 	return true
 end
 
-function ReplicationService:CharacterAdded(player, character)
-	local comparison = ChronoSettings.comparison
-
-	if comparison.enabled and not comparison.nativePlayers[player.Name] and character:WaitForChild("HumanoidRootPart") then
-		Replication.RegisterPlayer(player, character)
-	end
-end
-
 function ReplicationService:PlayerRemoving(player)
 	self.Strikes[player] = nil
-
-	if ChronoSettings.comparison.enabled then
-		Replication.UnregisterPlayer(player)
-	end
 end
 
 return ReplicationService

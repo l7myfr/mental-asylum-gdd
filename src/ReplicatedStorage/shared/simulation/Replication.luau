@@ -57,17 +57,6 @@ function Replication.RegisterNpc(character)
 	return Chrono.Entity.new(ChronoSettings.npcEntityType, character)
 end
 
--- Server only. Mirrors Chrono's automatic registration for when PLAYER_REPLICATION is CUSTOM.
-function Replication.RegisterPlayer(player, character)
-	return Chrono.Player.RegisterPlayer(player, character, {
-		config = ChronoSettings.playerEntityType,
-	})
-end
-
-function Replication.UnregisterPlayer(player)
-	Chrono.Player.UnregisterPlayer(player)
-end
-
 -- Locked player roots are CFrame-driven on the server, so their physics velocity reads as zero.
 function Replication.GetVelocity(character)
 	local entity = Replication.GetEntity(character)
