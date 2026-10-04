@@ -149,6 +149,15 @@ function MovementSimulation.GetDodgeSpeed(dodgeName, elapsed)
 	return finish + (peak - finish) * (1 - alpha) ^ easing
 end
 
+-- Whether the character is staggered at the given time. endTolerance shortens the stagger, for
+-- validating client timestamps.
+function MovementSimulation.IsStaggered(character, now, endTolerance)
+	local start = character:GetAttribute(attributes.staggerStart)
+	local finish = character:GetAttribute(attributes.staggerEnd)
+
+	return start ~= nil and finish ~= nil and now >= start and now < finish - (endTolerance or 0)
+end
+
 function MovementSimulation.StepDodge(character, input, moveVector, look, grounded, now)
 	local pressed = input.Dodge == true and character:GetAttribute(attributes.dodgeHeld) ~= true
 	character:SetAttribute(attributes.dodgeHeld, input.Dodge == true)
@@ -163,7 +172,7 @@ function MovementSimulation.StepDodge(character, input, moveVector, look, ground
 		return nil
 	end
 
-	if now < (character:GetAttribute(attributes.dodgeReady) or 0) then
+	if now < (character:GetAttribute(attributes.dodgeReady) or 0) or MovementSimulation.IsStaggered(character, now) then
 		return nil
 	end
 
@@ -202,6 +211,10 @@ function MovementSimulation.StepCharacter(character, input, deltaTime, now)
 	local heading = character:GetAttribute(attributes.heading) or facing
 
 	local goalSpeed = if sprinting then MovementConfig.runSpeed else MovementConfig.walkSpeed
+
+	if MovementSimulation.IsStaggered(character, now) then
+		goalSpeed *= MovementConfig.stagger.moveMultiplier
+	end
 	local targetSpeed = if hasInput then goalSpeed * moveVector.Magnitude else 0
 
 	local rate

@@ -55,6 +55,10 @@ function MovementService:OnDodge(player, dodgeName, start)
 		end
 	end
 
+	if MovementSimulation.IsStaggered(character, start, validation.cooldownTolerance) then
+		return
+	end
+
 	self.DodgeHistory[player] = {
 		name = dodgeName,
 		start = start,

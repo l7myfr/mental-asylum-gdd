@@ -8,7 +8,7 @@ local MeleeRegistry = require(ReplicatedStorage.shared.melee.MeleeRegistry)
 local CameraShaker = require(ReplicatedStorage.client.modules.utils.CameraShaker)
 local MeleePresenter = require(ReplicatedStorage.client.modules.melee.MeleePresenter)
 local HitFlash = require(ReplicatedStorage.client.modules.melee.HitFlash)
-local EvadePopup = require(ReplicatedStorage.client.modules.melee.EvadePopup)
+local CharacterPopup = require(ReplicatedStorage.client.modules.melee.CharacterPopup)
 local AnimationTracks = require(ReplicatedStorage.client.modules.animation.AnimationTracks)
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local Replication = require(ReplicatedStorage.shared.simulation.Replication)
@@ -255,7 +255,7 @@ function MeleeController:OnEvaded(weaponName)
 		table.insert(self.Flashes, HitFlash.new(character, hitFlash, feedback.color))
 	end
 
-	EvadePopup.Show(character, feedback)
+	CharacterPopup.Show(character, feedback)
 end
 
 function MeleeController:OnConfirm(attackId, weaponName, hitTargets, evadedTargets)

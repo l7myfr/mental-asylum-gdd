@@ -1,9 +1,9 @@
 local TweenService = game:GetService("TweenService")
 
-local EvadePopup = {}
+local CharacterPopup = {}
 
 -- Shows a label above the character that rises and fades out, then cleans itself up.
-function EvadePopup.Show(character, settings)
+function CharacterPopup.Show(character, settings)
 	local root = character:FindFirstChild("HumanoidRootPart")
 
 	if not root then
@@ -46,4 +46,4 @@ function EvadePopup.Show(character, settings)
 	fade:Play()
 end
 
-return EvadePopup
+return CharacterPopup

@@ -26,6 +26,18 @@ return {
 		size = UDim2.fromOffset(160, 40),
 	},
 
+	-- Shown on a staggered character to everyone: a tint for the stagger's duration and a rising label.
+	staggerFeedback = {
+		text = "STAGGERED",
+		color = Color3.fromRGB(170, 110, 255),
+		offset = Vector3.new(0, 3, 0),
+		rise = 2,
+		duration = 0.6,
+		size = UDim2.fromOffset(200, 40),
+		fillTransparency = 0.55,
+		outlineTransparency = 0.1,
+	},
+
 	starterMelee = "Dagger",
 	characterLoadTimeout = 10,
 	entityTag = "Entity",
@@ -70,6 +82,8 @@ return {
 				-- dodge start) to make it shorter or longer than the movement.
 				iframes = 0.7,
 				consumesSwing = true,
+				-- A swing that gets evaded staggers the attacker for this long.
+				staggerDuration = 0.4,
 				hitboxScale = 0.35,
 			},
 

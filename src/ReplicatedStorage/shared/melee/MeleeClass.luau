@@ -55,6 +55,10 @@ function MeleeClass:CanAttack(character, context)
 		return false
 	end
 
+	if MovementSimulation.IsStaggered(character, context.now) then
+		return false
+	end
+
 	if self:GetActiveAttack(character, context.now) then
 		return false
 	end

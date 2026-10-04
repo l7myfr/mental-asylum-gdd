@@ -109,6 +109,7 @@ local function record(memory, target, now, settings)
 		attackId = target:GetAttribute(meleeAttributes.attackId),
 		dodgeName = target:GetAttribute(movementAttributes.dodge),
 		dodgeStart = target:GetAttribute(movementAttributes.dodgeStart),
+		staggered = MovementSimulation.IsStaggered(target, now),
 		health = humanoid.Health / humanoid.MaxHealth,
 	})
 
@@ -187,6 +188,11 @@ end
 local function hasOpening(context)
 	local seen = context.seen
 	local sinceDodge, dodgeName = getSeenDodge(context)
+
+	-- A stagger is visible to everyone (tint and label), so a player would jump on it.
+	if seen.staggered then
+		return true
+	end
 
 	if
 		sinceDodge

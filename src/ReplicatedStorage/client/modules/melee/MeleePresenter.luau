@@ -3,10 +3,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Clock = require(ReplicatedStorage.shared.utils.Clock)
 
 local MeleeConfig = require(ReplicatedStorage.shared.config.MeleeConfig)
+local MovementConfig = require(ReplicatedStorage.shared.config.MovementConfig)
+local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
+local CharacterPopup = require(ReplicatedStorage.client.modules.melee.CharacterPopup)
 local MeleeRegistry = require(ReplicatedStorage.shared.melee.MeleeRegistry)
 local AnimationTracks = require(ReplicatedStorage.client.modules.animation.AnimationTracks)
 
 local attributes = MeleeConfig.attributes
+local movementAttributes = MovementConfig.attributes
+local staggerFeedback = MeleeConfig.staggerFeedback
 
 local MeleePresenter = {}
 MeleePresenter.__index = MeleePresenter
@@ -22,6 +27,8 @@ function MeleePresenter.new(character, animator)
 	self.AttackId = character:GetAttribute(attributes.attackId)
 	self.AttackStart = character:GetAttribute(attributes.attackStart)
 	self.AttackAnimation = nil
+	self.StaggerStart = character:GetAttribute(movementAttributes.staggerStart)
+	self.StaggerHighlight = nil
 
 	return self
 end
@@ -107,18 +114,59 @@ function MeleePresenter:UpdateAttack(now)
 	track.TimePosition = catchUp * attack.animationSpeed
 end
 
+-- Shows a stagger to everyone: the swing animation is cut off, a label pops up, and the character
+-- stays tinted until the stagger ends.
+function MeleePresenter:UpdateStagger(now)
+	local character = self.Character
+	local start = character:GetAttribute(movementAttributes.staggerStart)
+	local finish = character:GetAttribute(movementAttributes.staggerEnd)
+	local staggered = MovementSimulation.IsStaggered(character, now)
+
+	-- The attributes replicate separately; only treat a new start as a stagger once its end arrived.
+	if start ~= self.StaggerStart and start and finish and finish > start then
+		self.StaggerStart = start
+
+		if staggered then
+			self:StopAttack(if self.Weapon then self.Weapon.Config.animation.fadeOutTime else 0)
+			CharacterPopup.Show(character, staggerFeedback)
+		end
+	end
+
+	if staggered and not self.StaggerHighlight then
+		local highlight = Instance.new("Highlight")
+		highlight.FillColor = staggerFeedback.color
+		highlight.OutlineColor = staggerFeedback.color
+		highlight.FillTransparency = staggerFeedback.fillTransparency
+		highlight.OutlineTransparency = staggerFeedback.outlineTransparency
+		highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+		highlight.Adornee = character
+		highlight.Parent = character
+		self.StaggerHighlight = highlight
+	elseif not staggered and self.StaggerHighlight then
+		self.StaggerHighlight:Destroy()
+		self.StaggerHighlight = nil
+	end
+end
+
 function MeleePresenter:Update()
+	local now = Clock.Now()
 	local weapon = MeleeRegistry.Get(self.Character:GetAttribute(attributes.melee))
 	self:SetWeapon(weapon)
 
 	if weapon then
-		self:UpdateAttack(Clock.Now())
+		self:UpdateAttack(now)
 	end
+
+	self:UpdateStagger(now)
 end
 
 function MeleePresenter:Destroy()
 	self:ClearModel()
 	self.Tracks:Destroy()
+
+	if self.StaggerHighlight then
+		self.StaggerHighlight:Destroy()
+	end
 end
 
 return MeleePresenter

@@ -60,6 +60,11 @@ return {
 		},
 	},
 
+	-- While staggered (after having a swing evaded) a character can't dodge and moves slower.
+	stagger = {
+		moveMultiplier = 0.5,
+	},
+
 	removedCharacterChildren = { "Animate" },
 	removedChildTimeout = 5,
 
@@ -74,5 +79,7 @@ return {
 		dodgeFacing = "DodgeFacing",
 		dodgeReady = "DodgeReady",
 		dodgeHeld = "DodgeHeld",
+		staggerStart = "StaggerStart",
+		staggerEnd = "StaggerEnd",
 	},
 }

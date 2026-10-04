@@ -3,6 +3,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local MeleeConfig = require(ReplicatedStorage.shared.config.MeleeConfig)
+local MovementConfig = require(ReplicatedStorage.shared.config.MovementConfig)
+local MeleeRegistry = require(ReplicatedStorage.shared.melee.MeleeRegistry)
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local MeleeSimulation = require(ReplicatedStorage.shared.simulation.MeleeSimulation)
 local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
@@ -12,6 +14,7 @@ local Clock = require(ReplicatedStorage.shared.utils.Clock)
 local HitResolver = require(ServerStorage.server.modules.combat.HitResolver)
 
 local attributes = MeleeConfig.attributes
+local movementAttributes = MovementConfig.attributes
 local validation = ChronoSettings.validation
 
 local MeleeService = {}
@@ -32,7 +35,7 @@ function MeleeService:Start()
 		for character in AgentRegistry.GetAgents() do
 			MeleeSimulation.StepCharacter(character, AgentRegistry.ReadInput(character, now, deltaTime), now, function(hit)
 				if hit.evaded then
-					self:NotifyEvaded(hit.target, hit.attacker, hit.weapon)
+					self:Evaded(hit.target, hit.attacker, hit.weapon)
 				else
 					self:ApplyHit(hit, nil)
 				end
@@ -74,6 +77,10 @@ function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, 
 	end
 
 	if not weapon.Config.canAttackWhileDodging and MovementSimulation.GetDodge(character, start) then
+		return
+	end
+
+	if MovementSimulation.IsStaggered(character, start, validation.cooldownTolerance) then
 		return
 	end
 
@@ -145,12 +152,23 @@ function MeleeService:ApplyHit(hit, attackerPlayer)
 	return true
 end
 
--- Tells a player victim they evaded a hit, so their client can show it.
-function MeleeService:NotifyEvaded(target, attacker, weaponName)
+-- A target evaded the attacker's swing: tell a player victim so their client can show it, and
+-- stagger the attacker (the stagger replicates as attributes; every client shows it).
+function MeleeService:Evaded(target, attacker, weaponName)
 	local victim = Players:GetPlayerFromCharacter(target)
+	local weapon = MeleeRegistry.Get(weaponName)
+	local duration = weapon and weapon.Config.dodgeEvasion.staggerDuration
 
 	if victim then
 		self.Remotes.Evaded:Fire(victim, attacker, weaponName)
+	end
+
+	if duration and attacker.Parent then
+		local now = Clock.Now()
+
+		-- End first: clients treat a new StaggerStart as a stagger once its end has arrived too.
+		attacker:SetAttribute(movementAttributes.staggerEnd, now + duration)
+		attacker:SetAttribute(movementAttributes.staggerStart, now)
 	end
 end
 
@@ -160,7 +178,7 @@ function MeleeService:Update()
 			local landed = {}
 
 			for _, target in evaded do
-				self:NotifyEvaded(target, request.attacker, request.weapon.Name)
+				self:Evaded(target, request.attacker, request.weapon.Name)
 			end
 
 			for _, hit in hits do
