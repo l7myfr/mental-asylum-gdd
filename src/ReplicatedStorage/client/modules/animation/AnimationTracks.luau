@@ -24,13 +24,10 @@ function AnimationTracks.new(animator)
 	}, AnimationTracks)
 end
 
+-- Only tracks this object loaded are used. Looking tracks up on the Animator can return the copy Roblox
+-- replicates from another player's client, which replication also drives, so local Stop/Play on it
+-- is unreliable (remote swings would sometimes not play).
 function AnimationTracks:Get(animation)
-	local active = self.Animator:GetTrackByAnimationId(animation.AnimationId)
-
-	if active then
-		return active
-	end
-
 	local cached = self.Cache[animation]
 
 	if cached then
@@ -66,13 +63,13 @@ function AnimationTracks:Play(animation, settings)
 end
 
 function AnimationTracks:IsPlaying(animation)
-	local track = self.Animator:GetTrackByAnimationId(animation.AnimationId)
+	local track = self.Cache[animation]
 
 	return track ~= nil and track.IsPlaying
 end
 
 function AnimationTracks:Stop(animation, fadeTime)
-	local track = self.Animator:GetTrackByAnimationId(animation.AnimationId)
+	local track = self.Cache[animation]
 
 	if track then
 		track:Stop(fadeTime)

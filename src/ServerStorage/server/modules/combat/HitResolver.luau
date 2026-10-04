@@ -1,26 +1,14 @@
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local Replication = require(ReplicatedStorage.shared.simulation.Replication)
-local AgentRegistry = require(ReplicatedStorage.shared.simulation.AgentRegistry)
+local MeleeClass = require(ReplicatedStorage.shared.melee.MeleeClass)
 local Clock = require(ReplicatedStorage.shared.utils.Clock)
 
 local settings = ChronoSettings.lagCompensation
 
 local HitResolver = {}
 HitResolver.__index = HitResolver
-
-local function outsideDistance(cframe, size, point)
-	local localPoint = cframe:PointToObjectSpace(point)
-	local half = size * 0.5
-
-	return math.max(
-		math.abs(localPoint.X) - half.X,
-		math.abs(localPoint.Y) - half.Y,
-		math.abs(localPoint.Z) - half.Z
-	)
-end
 
 local function sampleCFrame(character, processTime)
 	local entity = Replication.GetEntity(character)
@@ -33,26 +21,6 @@ local function sampleCFrame(character, processTime)
 	local root = character:FindFirstChild("HumanoidRootPart")
 
 	return root and root.CFrame
-end
-
-local function getCandidates(attacker)
-	local candidates = {}
-
-	for _, player in Players:GetPlayers() do
-		local character = player.Character
-
-		if character and character ~= attacker then
-			table.insert(candidates, character)
-		end
-	end
-
-	for character in AgentRegistry.GetAgents() do
-		if character ~= attacker then
-			table.insert(candidates, character)
-		end
-	end
-
-	return candidates
 end
 
 function HitResolver.new()
@@ -100,7 +68,7 @@ function HitResolver:Evaluate(request, target, boxCFrame, size, attackerCFrame, 
 	local delay = self:GetDelay(request, Replication.GetEntity(target))
 	local targetCFrame = sampleCFrame(target, processTime - delay)
 
-	if not targetCFrame or outsideDistance(boxCFrame, size + root.Size, targetCFrame.Position) > 0 then
+	if not targetCFrame or not MeleeClass.Overlaps(boxCFrame, size, targetCFrame.Position, root.Size) then
 		return nil
 	end
 
@@ -160,7 +128,7 @@ function HitResolver:Resolve(request)
 		if attackerCFrame then
 			local boxCFrame = attackerCFrame * hitbox.offset
 
-			for _, target in getCandidates(request.attacker) do
+			for _, target in MeleeClass.GetCandidates(request.attacker) do
 				if not resolved[target] and #hits < hitbox.maxTargets then
 					local result = self:Evaluate(request, target, boxCFrame, hitbox.size, attackerCFrame, serverTime, processTime)
 

@@ -1,3 +1,5 @@
+local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MeleeConfig = require(ReplicatedStorage.shared.config.MeleeConfig)
@@ -135,30 +137,54 @@ function MeleeClass:CanHit(character, target)
 	return target.humanoid.Health > 0
 end
 
+-- Characters a swing can hit: player characters and tagged entities (dummies), minus the attacker.
+function MeleeClass.GetCandidates(attacker)
+	local candidates = {}
+	local seen = { [attacker] = true }
+
+	local function add(character)
+		if character and not seen[character] then
+			seen[character] = true
+			table.insert(candidates, character)
+		end
+	end
+
+	for _, player in Players:GetPlayers() do
+		add(player.Character)
+	end
+
+	for _, character in CollectionService:GetTagged(MeleeConfig.entityTag) do
+		add(character)
+	end
+
+	return candidates
+end
+
+-- The single hitbox test shared by client hit prediction, NPC attacks and the server's lag-compensated
+-- resolution. It checks the target's root (expanded by its size) because Chrono snapshots, which the
+-- server rewinds, only hold root CFrames; any per-limb test would disagree with the server.
+function MeleeClass.Overlaps(boxCFrame, boxSize, rootPosition, rootSize)
+	local localPoint = boxCFrame:PointToObjectSpace(rootPosition)
+	local half = (boxSize + rootSize) * 0.5
+
+	return math.abs(localPoint.X) <= half.X and math.abs(localPoint.Y) <= half.Y and math.abs(localPoint.Z) <= half.Z
+end
+
 function MeleeClass:QueryTargets(character, attack, now)
 	local cframe, size = self:GetHitbox(character, attack)
-	local params = OverlapParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { character }
-
 	local targets = {}
-	local seen = {}
 
-	for _, part in workspace:GetPartBoundsInBox(cframe, size, params) do
-		local model = part:FindFirstAncestorOfClass("Model")
-		local humanoid = model and model:FindFirstChildOfClass("Humanoid")
+	for _, model in MeleeClass.GetCandidates(character) do
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		local root = humanoid and humanoid.RootPart
 
-		if humanoid and not seen[humanoid] then
-			seen[humanoid] = true
-
-			local root = humanoid.RootPart
-
+		if root and MeleeClass.Overlaps(cframe, size, root.Position, root.Size) then
 			local target = {
 				character = model,
 				humanoid = humanoid,
 				root = root,
-				position = if root then root.Position else part.Position,
-				cframe = if root then root.CFrame else part.CFrame,
+				position = root.Position,
+				cframe = root.CFrame,
 				attackerCFrame = character:GetPivot(),
 			}
 
