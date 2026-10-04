@@ -186,6 +186,12 @@ end
 function MovementAnimator:UpdateDodge(now)
 	local start = self.Character:GetAttribute(attributes.dodgeStart)
 
+	-- A stagger can cancel a dodge that is already playing.
+	if self.DodgeAnimation and not MovementSimulation.GetLastDodge(self.Character, now) then
+		self.Tracks:Stop(self.DodgeAnimation, AnimationConfig.dodge.fadeOutTime)
+		self.DodgeAnimation = nil
+	end
+
 	if start == self.DodgeKey then
 		return
 	end

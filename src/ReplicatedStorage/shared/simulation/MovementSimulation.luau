@@ -99,6 +99,15 @@ function MovementSimulation.GetLastDodge(character, now)
 		return nil
 	end
 
+	-- A dodge pressed after a stagger began is cancelled: it was started before the stagger reached
+	-- the client, and a staggered character can't dodge.
+	local staggerStart = character:GetAttribute(attributes.staggerStart)
+	local staggerEnd = character:GetAttribute(attributes.staggerEnd)
+
+	if staggerStart and staggerEnd and start >= staggerStart and start < staggerEnd then
+		return nil
+	end
+
 	return dodgeName, now - start, MovementSimulation.GetDodgeSetting(dodgeName, "duration")
 end
 

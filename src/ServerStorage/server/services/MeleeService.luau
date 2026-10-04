@@ -153,8 +153,10 @@ function MeleeService:ApplyHit(hit, attackerPlayer)
 end
 
 -- A target evaded the attacker's swing: tell a player victim so their client can show it, and
--- stagger the attacker (the stagger replicates as attributes; every client shows it).
-function MeleeService:Evaded(target, attacker, weaponName)
+-- stagger the attacker (the stagger replicates as attributes; every client shows it). The stagger
+-- starts when the swing met the dodge (evadedAt), so dodges and attacks pressed after that are
+-- void, and lasts staggerDuration from now so the attacker always feels all of it.
+function MeleeService:Evaded(target, attacker, weaponName, evadedAt)
 	local victim = Players:GetPlayerFromCharacter(target)
 	local weapon = MeleeRegistry.Get(weaponName)
 	local duration = weapon and weapon.Config.dodgeEvasion.staggerDuration
@@ -168,7 +170,7 @@ function MeleeService:Evaded(target, attacker, weaponName)
 
 		-- End first: clients treat a new StaggerStart as a stagger once its end has arrived too.
 		attacker:SetAttribute(movementAttributes.staggerEnd, now + duration)
-		attacker:SetAttribute(movementAttributes.staggerStart, now)
+		attacker:SetAttribute(movementAttributes.staggerStart, math.min(evadedAt or now, now))
 	end
 end
 
@@ -178,7 +180,7 @@ function MeleeService:Update()
 			local landed = {}
 
 			for _, target in evaded do
-				self:Evaded(target, request.attacker, request.weapon.Name)
+				self:Evaded(target, request.attacker, request.weapon.Name, request.start + request.attack.hitStart)
 			end
 
 			for _, hit in hits do
