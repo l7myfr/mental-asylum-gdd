@@ -76,6 +76,13 @@ return {
 				maxTargets = 4,
 			},
 
+			-- Bigger box that only detects dodges: a target dodging anywhere inside it while the swing is
+			-- active evades it (and staggers the attacker), even if it already left the damage hitbox.
+			evadeHitbox = {
+				size = Vector3.new(9, 7, 10),
+				offset = CFrame.new(0, 0, -4),
+			},
+
 			dodgeEvasion = {
 				invulnerable = true,
 				-- Invulnerability lasts the whole dodge movement (0.34-0.4s). Set iframes (seconds from the

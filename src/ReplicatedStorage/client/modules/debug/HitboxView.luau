@@ -30,6 +30,7 @@ function HitboxView.new(character, folder)
 	self.Folder.Name = character.Name
 	self.Folder.Parent = folder
 	self.Hitbox = createBox(self.Folder)
+	self.EvadeBox = createBox(self.Folder)
 	self.Hurtboxes = {}
 	self.Connections = {}
 
@@ -91,6 +92,7 @@ end
 
 function HitboxView:UpdateHitbox(visible, now)
 	local box = self.Hitbox
+	local evadeBox = self.EvadeBox
 	local root = self.Character:FindFirstChild("HumanoidRootPart")
 	local weapon = MeleeRegistry.Get(self.Character:GetAttribute(meleeAttributes.melee))
 	local _, attack, elapsed = nil, nil, nil
@@ -101,6 +103,7 @@ function HitboxView:UpdateHitbox(visible, now)
 
 	if not visible or not root or not attack then
 		box.Visible = false
+		evadeBox.Visible = false
 		return
 	end
 
@@ -113,6 +116,16 @@ function HitboxView:UpdateHitbox(visible, now)
 	box.Color3 = if active then settings.hitbox.activeColor else settings.hitbox.windupColor
 	box.Transparency = if active then settings.hitbox.activeTransparency else settings.hitbox.windupTransparency
 	box.Visible = true
+
+	-- The evade box is placed relative to the root, like the hitbox.
+	local evadeCFrame, evadeSize = weapon:GetEvadeBox(CFrame.identity, attack)
+
+	evadeBox.Adornee = root
+	evadeBox.CFrame = evadeCFrame
+	evadeBox.Size = evadeSize
+	evadeBox.Color3 = settings.evadeBox.color
+	evadeBox.Transparency = if active then settings.evadeBox.activeTransparency else settings.evadeBox.windupTransparency
+	evadeBox.Visible = true
 end
 
 function HitboxView:Update(visible)

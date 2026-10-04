@@ -18,6 +18,13 @@ return {
 			activeTransparency = 0.45,
 		},
 
+		-- Bigger dodge-detection box; drawn around the attack hitbox.
+		evadeBox = {
+			color = Color3.fromRGB(60, 230, 230),
+			windupTransparency = 0.92,
+			activeTransparency = 0.8,
+		},
+
 		hurtbox = {
 			color = Color3.fromRGB(60, 255, 120),
 			invulnerableColor = Color3.fromRGB(80, 200, 255),

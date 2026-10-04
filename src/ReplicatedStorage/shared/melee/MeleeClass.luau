@@ -109,6 +109,15 @@ function MeleeClass:GetHitbox(character, attack)
 	return root.CFrame * hitbox.offset, hitbox.size, hitbox
 end
 
+-- The bigger box that detects dodges, placed relative to the attacker's root. A dodging target inside
+-- it evades the swing (and staggers the attacker) even if the damage hitbox would have missed it.
+-- Falls back to the damage hitbox when the weapon doesn't define one.
+function MeleeClass:GetEvadeBox(rootCFrame, attack)
+	local box = attack.evadeHitbox or self.Config.evadeHitbox or attack.hitbox or self.Config.hitbox
+
+	return rootCFrame * box.offset, box.size
+end
+
 -- Whether a dodge's invulnerability frames cover this moment. They start with the dodge and last
 -- dodgeEvasion.iframes, or the dodge's own movement duration when that is not set.
 function MeleeClass:IsDodgeProtected(character, now)
@@ -174,15 +183,19 @@ function MeleeClass.Overlaps(boxCFrame, boxSize, rootPosition, rootSize)
 	return math.abs(localPoint.X) <= half.X and math.abs(localPoint.Y) <= half.Y and math.abs(localPoint.Z) <= half.Z
 end
 
+-- Targets in the damage hitbox, plus dodging targets anywhere in the evade box (marked evaded).
 function MeleeClass:QueryTargets(character, attack, now)
 	local cframe, size = self:GetHitbox(character, attack)
+	local evadeCFrame, evadeSize = self:GetEvadeBox(character.HumanoidRootPart.CFrame, attack)
 	local targets = {}
 
 	for _, model in MeleeClass.GetCandidates(character) do
 		local humanoid = model:FindFirstChildOfClass("Humanoid")
 		local root = humanoid and humanoid.RootPart
+		local inDamage = root and MeleeClass.Overlaps(cframe, size, root.Position, root.Size)
+		local inEvade = root and MeleeClass.Overlaps(evadeCFrame, evadeSize, root.Position, root.Size)
 
-		if root and MeleeClass.Overlaps(cframe, size, root.Position, root.Size) then
+		if inDamage or inEvade then
 			local target = {
 				character = model,
 				humanoid = humanoid,
@@ -193,8 +206,11 @@ function MeleeClass:QueryTargets(character, attack, now)
 			}
 
 			if self:CanHit(character, target) then
-				target.evaded = self:IsEvading(target, cframe, size, now)
-				table.insert(targets, target)
+				target.evaded = inEvade and self:IsEvading(target, evadeCFrame, evadeSize, now)
+
+				if inDamage or target.evaded then
+					table.insert(targets, target)
+				end
 			end
 		end
 	end

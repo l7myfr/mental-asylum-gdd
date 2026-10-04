@@ -68,11 +68,19 @@ function HitResolver:Evaluate(request, target, boxCFrame, size, attackerCFrame, 
 	local delay = self:GetDelay(request, Replication.GetEntity(target))
 	local targetCFrame = sampleCFrame(target, processTime - delay)
 
-	if not targetCFrame or not MeleeClass.Overlaps(boxCFrame, size, targetCFrame.Position, root.Size) then
+	if not targetCFrame then
 		return nil
 	end
 
 	local weapon = request.weapon
+	local evadeCFrame, evadeSize = weapon:GetEvadeBox(attackerCFrame, request.attack)
+	local inDamage = MeleeClass.Overlaps(boxCFrame, size, targetCFrame.Position, root.Size)
+	local inEvade = MeleeClass.Overlaps(evadeCFrame, evadeSize, targetCFrame.Position, root.Size)
+
+	if not inDamage and not inEvade then
+		return nil
+	end
+
 	local info = {
 		character = target,
 		humanoid = humanoid,
@@ -86,8 +94,13 @@ function HitResolver:Evaluate(request, target, boxCFrame, size, attackerCFrame, 
 		return nil
 	end
 
-	if weapon:IsEvading(info, boxCFrame, size, serverTime - delay) then
+	-- Dodges are detected with the bigger evade box; damage still needs the damage hitbox.
+	if inEvade and weapon:IsEvading(info, evadeCFrame, evadeSize, serverTime - delay) then
 		return if weapon.Config.dodgeEvasion.consumesSwing then { evaded = true } else nil
+	end
+
+	if not inDamage then
+		return nil
 	end
 
 	return {
