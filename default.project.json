@@ -2,28 +2,39 @@
   "name": "mental-asylum",
   "tree": {
     "$className": "DataModel",
-    "ServerScriptService": {
-      "Server": {
-        "$path": "src/server"
-      }
+    "Workspace": {
+      "$path": "src/Workspace"
     },
     "Lighting": {
-      "$properties": {
-        "ClockTime": 0,
-        "Brightness": 0,
-        "Ambient": [0.03, 0.03, 0.04],
-        "OutdoorAmbient": [0.04, 0.04, 0.05],
-        "EnvironmentDiffuseScale": 0,
-        "EnvironmentSpecularScale": 0
+      "$path": "src/Lighting"
+    },
+    "ReplicatedFirst": {
+      "$path": "src/ReplicatedFirst"
+    },
+    "ReplicatedStorage": {
+      "$path": "src/ReplicatedStorage"
+    },
+    "ServerScriptService": {
+      "$path": "src/ServerScriptService"
+    },
+    "ServerStorage": {
+      "$path": "src/ServerStorage"
+    },
+    "SoundService": {
+      "$path": "src/SoundService"
+    },
+    "StarterGui": {
+      "$path": "src/StarterGui"
+    },
+    "StarterPack": {
+      "$path": "src/StarterPack"
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
       },
-      "Atmosphere": {
-        "$className": "Atmosphere",
-        "$properties": {
-          "Density": 0.45,
-          "Haze": 2,
-          "Color": [0.35, 0.37, 0.33],
-          "Decay": [0.1, 0.11, 0.09]
-        }
+      "StarterCharacterScripts": {
+        "$path": "src/StarterPlayer/StarterCharacterScripts"
       }
     }
   }
