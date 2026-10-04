@@ -5,6 +5,23 @@ return {
 		prefix = "[Validation]",
 	},
 
+	-- Server-side root position (streamed) next to the locally rendered root, per character.
+	positions = {
+		enabledByDefault = true,
+		sendRate = 1 / 20,
+		folderName = "PositionDebug",
+		contextName = "PositionDebugContext",
+		contextPriority = 3000,
+		toggleAction = "TogglePositions",
+		toggleKeys = { Enum.KeyCode.F3 },
+		entityTag = "Entity",
+		rootName = "HumanoidRootPart",
+		alwaysOnTop = true,
+		transparency = 0.5,
+		serverColor = Color3.fromRGB(255, 60, 60),
+		clientColor = Color3.fromRGB(60, 200, 255),
+	},
+
 	hitboxes = {
 		enabledByDefault = true,
 		folderName = "HitboxDebug",

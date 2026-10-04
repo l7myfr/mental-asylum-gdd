@@ -103,6 +103,12 @@ local function WrapFunction(instance)
 	return wrapper
 end
 
+local remoteClasses = {
+	Event = "RemoteEvent",
+	Unreliable = "UnreliableRemoteEvent",
+	Function = "RemoteFunction",
+}
+
 local wrapperCache = {}
 
 function Networking.Init(objects)
@@ -125,7 +131,7 @@ function Networking.Init(objects)
 						instance = folder:FindFirstChild(remoteName)
 
 						if not instance then
-							instance = Instance.new(remoteType == "Function" and "RemoteFunction" or "RemoteEvent")
+							instance = Instance.new(remoteClasses[remoteType] or "RemoteEvent")
 							instance.Name = remoteName
 							instance.Parent = folder
 						end

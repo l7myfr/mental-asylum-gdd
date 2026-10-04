@@ -1,9 +1,9 @@
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DebugConfig = require(ReplicatedStorage.shared.config.DebugConfig)
 local HitboxView = require(ReplicatedStorage.client.modules.debug.HitboxView)
+local DebugToggle = require(ReplicatedStorage.client.modules.debug.DebugToggle)
 
 local settings = DebugConfig.hitboxes
 
@@ -18,7 +18,9 @@ function HitboxDebugController:Start()
 	self.Folder.Name = settings.folderName
 	self.Folder.Parent = workspace.CurrentCamera
 
-	self:CreateToggle()
+	DebugToggle.new(settings, function()
+		self.Enabled = not self.Enabled
+	end)
 
 	self:LinkObject(function(model)
 		self:AddCharacter(model)
@@ -30,29 +32,6 @@ function HitboxDebugController:Start()
 		for _, view in self.Views do
 			view:Update(self.Enabled)
 		end
-	end)
-end
-
-function HitboxDebugController:CreateToggle()
-	local context = Instance.new("InputContext")
-	context.Name = settings.contextName
-	context.Priority = settings.contextPriority
-
-	local action = Instance.new("InputAction")
-	action.Name = settings.toggleAction
-	action.Type = Enum.InputActionType.Bool
-
-	for _, keyCode in settings.toggleKeys do
-		local binding = Instance.new("InputBinding")
-		binding.KeyCode = keyCode
-		binding.Parent = action
-	end
-
-	action.Parent = context
-	context.Parent = Players.LocalPlayer
-
-	action.Pressed:Connect(function()
-		self.Enabled = not self.Enabled
 	end)
 end
 
