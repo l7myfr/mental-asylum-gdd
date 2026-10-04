@@ -48,14 +48,14 @@ function MeleePresenter:ClearModel()
 end
 
 function MeleePresenter:SetWeapon(weapon)
-	if weapon == self.Weapon then
-		return
+	if weapon ~= self.Weapon then
+		self:ClearModel()
+		self.Weapon = weapon
 	end
 
-	self:ClearModel()
-	self.Weapon = weapon
-
-	if weapon then
+	-- CreateModel returns nil until the grip limb has loaded; Update calls this every frame, so a
+	-- missing model is retried instead of staying unequipped.
+	if weapon and not self.Model then
 		self.Model, self.Joint = weapon:CreateModel(self.Character)
 	end
 end
