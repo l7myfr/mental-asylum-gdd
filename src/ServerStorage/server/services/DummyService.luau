@@ -37,6 +37,10 @@ function DummyService:Spawn(dummyName, settings)
 
 	local entity = Replication.RegisterNpc(character)
 
+	-- NPCs are stepped on the server, which writes the root CFrame every frame. If Roblox auto-assigns
+	-- ownership to a nearby client, those writes snap the NPC back to its stale server position.
+	humanoid.RootPart:SetNetworkOwner(nil)
+
 	if settings.melee then
 		self.Melee:Equip(character, settings.melee)
 	end
