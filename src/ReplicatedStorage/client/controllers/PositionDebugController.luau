@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DebugConfig = require(ReplicatedStorage.shared.config.DebugConfig)
 local DebugToggle = require(ReplicatedStorage.client.modules.debug.DebugToggle)
+local Replication = require(ReplicatedStorage.shared.simulation.Replication)
 
 local settings = DebugConfig.positions
 
@@ -26,6 +27,47 @@ local function createBox(parent, color)
 	box.Parent = parent
 
 	return box
+end
+
+local function createLabel(parent)
+	local billboard = Instance.new("BillboardGui")
+	billboard.AlwaysOnTop = true
+	billboard.Size = settings.labelSize
+	billboard.StudsOffsetWorldSpace = settings.labelOffset
+	billboard.Enabled = false
+	billboard.Parent = parent
+
+	local text = Instance.new("TextLabel")
+	text.BackgroundTransparency = 1
+	text.Size = UDim2.fromScale(1, 1)
+	text.TextScaled = true
+	text.TextStrokeTransparency = 0
+	text.TextColor3 = Color3.new(1, 1, 1)
+	text.Parent = billboard
+
+	return billboard, text
+end
+
+-- Describes who drives this character on this client: Chrono (and whether Roblox's replication is
+-- locked out) or Roblox's native replication.
+local function describe(character, root)
+	local entity = Replication.GetEntity(character)
+
+	if not entity then
+		return "ROBLOX native"
+	end
+
+	if entity.isContextOwner then
+		return "CHRONO (you own it)"
+	end
+
+	local delay = Replication.GetViewDelay(entity)
+
+	return ("CHRONO %s | anchored=%s | delay %s"):format(
+		if entity._lockedCFReplication then "locked" else "NATIVE mode",
+		tostring(root.Anchored),
+		if delay then ("%dms"):format(delay * 1000) else "?"
+	)
 end
 
 function PositionDebugController:Start()
@@ -61,6 +103,7 @@ function PositionDebugController:OnPosition(character, cframe)
 			Server = createBox(self.Folder, settings.serverColor),
 			Client = createBox(self.Folder, settings.clientColor),
 		}
+		view.Label, view.LabelText = createLabel(self.Folder)
 		self.Views[character] = view
 	end
 
@@ -74,16 +117,20 @@ function PositionDebugController:Render()
 		if not root then
 			view.Server:Destroy()
 			view.Client:Destroy()
+			view.Label:Destroy()
 			self.Views[character] = nil
 		else
 			view.Server.Visible = self.Enabled
 			view.Client.Visible = self.Enabled
+			view.Label.Enabled = self.Enabled
 
 			if self.Enabled then
 				view.Server.CFrame = view.ServerCFrame
 				view.Server.Size = root.Size
 				view.Client.CFrame = root.CFrame
 				view.Client.Size = root.Size
+				view.Label.Adornee = root
+				view.LabelText.Text = describe(character, root)
 			end
 		end
 	end

@@ -20,6 +20,8 @@ return {
 		transparency = 0.5,
 		serverColor = Color3.fromRGB(255, 60, 60),
 		clientColor = Color3.fromRGB(60, 200, 255),
+		labelSize = UDim2.fromOffset(320, 24),
+		labelOffset = Vector3.new(0, 4, 0),
 	},
 
 	-- A button that launches every player's character at once, to compare replication side by side.
