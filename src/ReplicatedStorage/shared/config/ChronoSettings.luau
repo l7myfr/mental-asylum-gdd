@@ -14,6 +14,10 @@ return {
 		-- LOW also prints idle/respawn interpolation notices that are expected.
 		WARNING_SEVERITY = "MEDIUM",
 		PLAYER_REPLICATION = if comparison.enabled then "CUSTOM" else "AUTOMATIC",
+		-- Chrono's docs: buffer ~2x the snapshot interval (33ms at 60Hz), max 2-3x the minimum.
+		-- The buffer still grows dynamically up to MAX_BUFFER for jittery connections.
+		MIN_BUFFER = 0.035,
+		MAX_BUFFER = 0.105,
 	},
 
 	comparison = comparison,
