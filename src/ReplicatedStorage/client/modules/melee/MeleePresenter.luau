@@ -93,12 +93,18 @@ function MeleePresenter:UpdateAttack(now)
 	end
 
 	self.AttackAnimation = animation
-	self.Tracks:Play(animation, {
+
+	local track = self.Tracks:Play(animation, {
 		priority = animationSettings.priority,
 		fadeTime = animationSettings.fadeTime,
 		speed = attack.animationSpeed,
 		restart = true,
 	})
+
+	-- Swings from other clients arrive late; skip ahead so the windup shows when it really happened
+	-- and defenders can react to it. Capped, since start times come from another client's clock.
+	local catchUp = math.clamp(now - start, 0, animationSettings.maxCatchUp)
+	track.TimePosition = catchUp * attack.animationSpeed
 end
 
 function MeleePresenter:Update()

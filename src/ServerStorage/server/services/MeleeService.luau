@@ -28,10 +28,12 @@ MeleeService.Remotes = {
 	Attack = "Event",
 	Confirm = "Event",
 	Evaded = "Event",
+	Refunded = "Event",
 }
 
 MeleeService.AttackHistory = {}
-MeleeService.PendingHits = {}
+-- Landed hits that a dodge pressed in time could still refund; see LandHit.
+MeleeService.RecentHits = {}
 
 function MeleeService:Start()
 	self.Resolver = HitResolver.new()
@@ -42,7 +44,7 @@ function MeleeService:Start()
 				if hit.evaded then
 					self:NotifyEvaded(hit.target, hit.attacker, hit.weapon)
 				else
-					self:HoldHit(hit, nil)
+					self:LandHit(hit, nil)
 				end
 			end)
 		end
@@ -174,30 +176,41 @@ function MeleeService:GetDodgeDeadline(hit, victim)
 	return seenAt + self:GetReactionWindow(hit)
 end
 
--- Hits are held until the dodge deadline has passed (plus the victim's latency, so a dodge sent in
--- time has arrived) before damage, so a dodge started in reaction to the hit still evades it.
-function MeleeService:HoldHit(hit, batch)
+-- Applies a hit immediately and remembers it until a dodge pressed in time could no longer arrive
+-- (the dodge deadline plus the victim's latency). Damage never waits on the network; instead a dodge
+-- that turns out to have been pressed in time refunds the hit.
+function MeleeService:LandHit(hit, attackerPlayer)
 	local victim = Players:GetPlayerFromCharacter(hit.target)
 
 	hit.time = hit.time or Clock.Now()
 	hit.swingTime = hit.swingTime or hit.time
 	hit.attackerLatency = hit.attackerLatency or 0
 
+	if not self:ApplyHit(hit, attackerPlayer) then
+		return false
+	end
+
 	local deadline = self:GetDodgeDeadline(hit, victim)
 
-	table.insert(self.PendingHits, {
+	table.insert(self.RecentHits, {
 		hit = hit,
-		batch = batch,
+		attackerPlayer = attackerPlayer,
 		deadline = deadline,
-		releaseAt = deadline + (if victim then self.Replication:GetLatency(victim) else 0),
+		expiresAt = deadline + (if victim then self.Replication:GetLatency(victim) else 0),
 	})
 
-	if batch then
-		batch.waiting += 1
-	end
+	return true
 end
 
-function MeleeService:DodgedLate(hit, deadline)
+-- Whether a dodge that has arrived since the hit landed covers it: the victim was already dodging at
+-- the hit (the dodge just reached the server late), or started one within the dodge deadline.
+function MeleeService:WasDodged(hit, deadline)
+	local weapon = MeleeRegistry.Get(hit.weapon)
+
+	if weapon and weapon:IsDodgeProtected(hit.target, hit.time) then
+		return true
+	end
+
 	local dodgeStart = hit.target:GetAttribute(movementAttributes.dodgeStart)
 
 	return dodgeStart ~= nil and dodgeStart >= hit.time and dodgeStart <= deadline
@@ -212,65 +225,53 @@ function MeleeService:NotifyEvaded(target, attacker, weaponName)
 	end
 end
 
-function MeleeService:ReleaseHit(hit, batch, deadline)
-	if self:DodgedLate(hit, deadline) then
-		self:NotifyEvaded(hit.target, hit.attacker, hit.weapon)
+function MeleeService:Refund(recent)
+	local hit = recent.hit
+	local humanoid = hit.humanoid
 
-		if batch then
-			table.insert(batch.evaded, hit.target)
-		end
-	elseif self:ApplyHit(hit, batch and batch.player) and batch then
-		table.insert(batch.hits, hit.target)
+	-- A lethal hit cannot be undone.
+	if not humanoid.Parent or humanoid.Health <= 0 then
+		return
 	end
 
-	if batch then
-		batch.waiting -= 1
+	humanoid.Health = math.min(humanoid.Health + hit.damage, humanoid.MaxHealth)
+	self:NotifyEvaded(hit.target, hit.attacker, hit.weapon)
 
-		if batch.waiting == 0 then
-			self:Confirm(batch)
-		end
-	end
-end
-
-function MeleeService:Confirm(batch)
-	if batch.player.Parent then
-		self.Remotes.Confirm:Fire(batch.player, batch.attackId, batch.weapon, batch.hits, batch.evaded)
+	if recent.attackerPlayer and recent.attackerPlayer.Parent then
+		self.Remotes.Refunded:Fire(recent.attackerPlayer, hit.target, hit.weapon)
 	end
 end
 
 function MeleeService:Update()
 	local now = Clock.Now()
 
-	for index = #self.PendingHits, 1, -1 do
-		local pending = self.PendingHits[index]
+	for index = #self.RecentHits, 1, -1 do
+		local recent = self.RecentHits[index]
 
-		if now >= pending.releaseAt then
-			table.remove(self.PendingHits, index)
-			self:ReleaseHit(pending.hit, pending.batch, pending.deadline)
+		if self:WasDodged(recent.hit, recent.deadline) then
+			table.remove(self.RecentHits, index)
+			self:Refund(recent)
+		elseif now >= recent.expiresAt then
+			table.remove(self.RecentHits, index)
 		end
 	end
 
 	if self.Resolver then
 		self.Resolver:Update(function(request, hits, evaded)
-			local batch = {
-				player = request.player,
-				attackId = request.attackId,
-				weapon = request.weapon.Name,
-				hits = {},
-				evaded = evaded,
-				waiting = 0,
-			}
+			local landed = {}
 
 			for _, target in evaded do
 				self:NotifyEvaded(target, request.attacker, request.weapon.Name)
 			end
 
 			for _, hit in hits do
-				self:HoldHit(hit, batch)
+				if self:LandHit(hit, request.player) then
+					table.insert(landed, hit.target)
+				end
 			end
 
-			if batch.waiting == 0 then
-				self:Confirm(batch)
+			if request.player.Parent then
+				self.Remotes.Confirm:Fire(request.player, request.attackId, request.weapon.Name, landed, evaded)
 			end
 		end)
 	end

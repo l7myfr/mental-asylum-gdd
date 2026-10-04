@@ -23,6 +23,7 @@ MeleeController.Remotes = {
 	Attack = "Event",
 	Confirm = "Event",
 	Evaded = "Event",
+	Refunded = "Event",
 }
 
 local prediction = MeleeConfig.prediction
@@ -61,6 +62,11 @@ function MeleeController:Start()
 
 	self.Remotes.Evaded:Connect(function(attacker, weaponName)
 		self:OnEvaded(weaponName)
+	end)
+
+	-- A hit we landed was refunded because the target's dodge arrived in time.
+	self.Remotes.Refunded:Connect(function(target, weaponName)
+		self:ShowEvaded(nil, target, weaponName)
 	end)
 
 	RunService.PreAnimation:Connect(function()

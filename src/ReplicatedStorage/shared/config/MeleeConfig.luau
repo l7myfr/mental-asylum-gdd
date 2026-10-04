@@ -69,7 +69,7 @@ return {
 				-- Invulnerability lasts the whole dodge movement (0.34-0.4s). Set iframes (seconds from the
 				-- dodge start) to make it shorter or longer than the movement.
 				iframes = nil,
-				-- A dodge started up to this long after being hit cancels the hit. Damage is held this long.
+				-- A dodge started up to this long after the victim could see the swing refunds the hit.
 				reactionWindow = 0.15,
 				consumesSwing = true,
 				hitboxScale = 0.35,
@@ -114,6 +114,8 @@ return {
 				-- How late after a swing ends it may still start playing on other clients. It covers
 				-- network delay plus the difference between two clients' server-time estimates.
 				renderSlack = 1,
+				-- Most a remote swing animation is skipped ahead to make up for network delay.
+				maxCatchUp = 0.25,
 			},
 
 			effects = {
