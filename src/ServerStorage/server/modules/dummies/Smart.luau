@@ -5,6 +5,7 @@ local MovementConfig = require(ReplicatedStorage.shared.config.MovementConfig)
 local MeleeConfig = require(ReplicatedStorage.shared.config.MeleeConfig)
 local MeleeRegistry = require(ReplicatedStorage.shared.melee.MeleeRegistry)
 local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
+local Replication = require(ReplicatedStorage.shared.simulation.Replication)
 
 local meleeAttributes = MeleeConfig.attributes
 local movementAttributes = MovementConfig.attributes
@@ -87,12 +88,12 @@ end
 local function predictPosition(character, leadTime)
 	local root = character.HumanoidRootPart
 
-	return root.Position + root.AssemblyLinearVelocity * flatMask * leadTime
+	return root.Position + Replication.GetVelocity(character) * flatMask * leadTime
 end
 
 local function predictHitbox(attacker, weapon, attack, leadTime)
 	local cframe, size = weapon:GetHitbox(attacker, attack)
-	local velocity = attacker.HumanoidRootPart.AssemblyLinearVelocity * flatMask
+	local velocity = Replication.GetVelocity(attacker) * flatMask
 
 	return cframe + velocity * leadTime, size
 end
@@ -152,7 +153,7 @@ local function assessIncomingAttack(agent, target, weapon, now, settings)
 
 	local targetRoot = target.HumanoidRootPart
 	local toSelf = flatUnit(agent.Root.Position - targetRoot.Position, Vector3.zero)
-	local closingSpeed = (targetRoot.AssemblyLinearVelocity * flatMask):Dot(toSelf)
+	local closingSpeed = (Replication.GetVelocity(target) * flatMask):Dot(toSelf)
 	local held = target:GetAttribute(meleeAttributes.attackHeld) == true
 
 	if not held and closingSpeed < predict.minClosingSpeed then

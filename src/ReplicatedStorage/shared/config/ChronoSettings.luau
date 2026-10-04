@@ -10,7 +10,8 @@ return {
 		PLAYER = {
 			BUFFER = 0,
 			TICK_RATE = 1 / 60,
-			MODEL_REPLICATION_MODE = "NATIVE",
+			-- Turns off Roblox's physics replication so other clients only see Chrono's interpolation.
+			MODEL_REPLICATION_MODE = "NATIVE_WITH_LOCK",
 			HALF_TICK_DISTANCE = math.huge,
 			ASSEMBLY_ROOT_PART_CHECK = true,
 		},
@@ -18,6 +19,7 @@ return {
 			BUFFER = 0,
 			TICK_RATE = 1 / 60,
 			STORE_SNAPSHOTS = true,
+			-- Dummies are moved by server-side Humanoid physics, which a locked root would freeze.
 			MODEL_REPLICATION_MODE = "NATIVE",
 			HALF_TICK_DISTANCE = math.huge,
 			ASSEMBLY_ROOT_PART_CHECK = true,

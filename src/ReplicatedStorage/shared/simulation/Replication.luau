@@ -51,7 +51,24 @@ function Replication.GetViewDelay(entity)
 end
 
 function Replication.RegisterNpc(character)
+	-- R6 rigs use the Head as PrimaryPart; Chrono must track the root instead. Players get this from Chrono itself.
+	Chrono.Config.SetModelPrimaryForChrono(character, character:FindFirstChildOfClass("Humanoid").RootPart.Name)
+
 	return Chrono.Entity.new(ChronoSettings.npcEntityType, character)
+end
+
+-- Locked player roots are CFrame-driven on the server, so their physics velocity reads as zero.
+function Replication.GetVelocity(character)
+	local entity = Replication.GetEntity(character)
+	local latest = entity and entity.snapshot and entity.snapshot:GetLatest()
+
+	if latest and latest.velocity then
+		return latest.velocity
+	end
+
+	local root = character:FindFirstChild("HumanoidRootPart")
+
+	return if root then root.AssemblyLinearVelocity else Vector3.zero
 end
 
 function Replication.Unregister(entity)
