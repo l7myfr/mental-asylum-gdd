@@ -68,7 +68,7 @@ return {
 				invulnerable = true,
 				-- Invulnerability lasts the whole dodge movement (0.34-0.4s). Set iframes (seconds from the
 				-- dodge start) to make it shorter or longer than the movement.
-				iframes = nil,
+				iframes = 0.7,
 				consumesSwing = true,
 				hitboxScale = 0.35,
 			},
@@ -81,7 +81,7 @@ return {
 			attacks = {
 				swing1 = {
 					animation = "swing1",
-					animationSpeed = 1.15,
+					animationSpeed = 1,
 					duration = 0.45,
 					hitStart = 0.22,
 					hitEnd = 0.38,
@@ -89,7 +89,7 @@ return {
 				},
 				swing2 = {
 					animation = "swing2",
-					animationSpeed = 1.15,
+					animationSpeed = 1,
 					duration = 0.45,
 					hitStart = 0.24,
 					hitEnd = 0.38,

@@ -32,7 +32,7 @@ return {
 	dodge = {
 		cooldown = 1.1,
 		duration = 0.4,
-		speed = 42,
+		speed = 72,
 		endSpeed = 8,
 		easing = 2,
 		animationSpeed = 1,
@@ -44,18 +44,18 @@ return {
 			back = {
 				vector = Vector3.new(0, 0, 1),
 				animation = "dodgeback",
-				duration = 0.34,
-				animationSpeed = 1.1,
+				duration = 0.4,
+				animationSpeed = 0.6,
 			},
 			left = {
 				vector = Vector3.new(-1, 0, 0),
 				animation = "dodgeleft",
-				animationSpeed = 1.4,
+				animationSpeed = 1,
 			},
 			right = {
 				vector = Vector3.new(1, 0, 0),
 				animation = "dodgeright",
-				animationSpeed = 1.4,
+				animationSpeed = 1,
 			},
 		},
 	},
