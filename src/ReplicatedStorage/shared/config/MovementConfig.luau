@@ -1,0 +1,76 @@
+return {
+	simulation = {
+		priority = 100,
+	},
+
+	walkSpeed = 12,
+	runSpeed = 24,
+	inputDeadzone = 0.1,
+	stopThreshold = 0.05,
+	steerDistance = 4,
+	turnSpeed = math.rad(900),
+	airControl = 0.4,
+
+	acceleration = {
+		walk = 24,
+		run = 16,
+	},
+
+	deceleration = {
+		slowdown = 20,
+		stop = 34,
+	},
+
+	facing = {
+		moveSharpness = 14,
+		cameraSharpness = 16,
+		dodgeSharpness = 30,
+	},
+
+	dodge = {
+		cooldown = 1.1,
+		duration = 0.4,
+		speed = 42,
+		endSpeed = 8,
+		easing = 2,
+		animationSpeed = 1,
+		minimumInputDot = 0.35,
+		fallback = "back",
+		requiresGround = true,
+
+		directions = {
+			back = {
+				vector = Vector3.new(0, 0, 1),
+				animation = "dodgeback",
+				duration = 0.34,
+				animationSpeed = 1.1,
+			},
+			left = {
+				vector = Vector3.new(-1, 0, 0),
+				animation = "dodgeleft",
+				animationSpeed = 1.4,
+			},
+			right = {
+				vector = Vector3.new(1, 0, 0),
+				animation = "dodgeright",
+				animationSpeed = 1.4,
+			},
+		},
+	},
+
+	removedCharacterChildren = { "Animate" },
+	removedChildTimeout = 5,
+
+	attributes = {
+		speed = "MoveSpeed",
+		heading = "MoveHeading",
+		facing = "Facing",
+		sprinting = "Sprinting",
+		dodge = "Dodge",
+		dodgeStart = "DodgeStart",
+		dodgeDirection = "DodgeDirection",
+		dodgeFacing = "DodgeFacing",
+		dodgeReady = "DodgeReady",
+		dodgeHeld = "DodgeHeld",
+	},
+}
