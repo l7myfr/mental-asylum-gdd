@@ -16,6 +16,16 @@ return {
 		cancelFadeOut = 0.1,
 	},
 
+	-- Shown to a player when they evade a hit: a flash on their character and a rising label.
+	evadeFeedback = {
+		text = "EVADED",
+		color = Color3.fromRGB(255, 220, 60),
+		offset = Vector3.new(0, 3, 0),
+		rise = 2,
+		duration = 0.6,
+		size = UDim2.fromOffset(160, 40),
+	},
+
 	starterMelee = "Dagger",
 	characterLoadTimeout = 10,
 	entityTag = "Entity",
@@ -56,8 +66,9 @@ return {
 
 			dodgeEvasion = {
 				invulnerable = true,
-				-- Invulnerability from the start of a dodge. Dodges themselves last 0.34-0.4s.
-				iframes = 0.2,
+				-- Invulnerability lasts the whole dodge movement (0.34-0.4s). Set iframes (seconds from the
+				-- dodge start) to make it shorter or longer than the movement.
+				iframes = nil,
 				-- A dodge started up to this long after being hit cancels the hit. Damage is held this long.
 				reactionWindow = 0.15,
 				consumesSwing = true,

@@ -8,6 +8,7 @@ local MeleeRegistry = require(ReplicatedStorage.shared.melee.MeleeRegistry)
 local CameraShaker = require(ReplicatedStorage.client.modules.utils.CameraShaker)
 local MeleePresenter = require(ReplicatedStorage.client.modules.melee.MeleePresenter)
 local HitFlash = require(ReplicatedStorage.client.modules.melee.HitFlash)
+local EvadePopup = require(ReplicatedStorage.client.modules.melee.EvadePopup)
 local AnimationTracks = require(ReplicatedStorage.client.modules.animation.AnimationTracks)
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local Replication = require(ReplicatedStorage.shared.simulation.Replication)
@@ -21,6 +22,7 @@ MeleeController.Remotes = {
 	Hit = "Event",
 	Attack = "Event",
 	Confirm = "Event",
+	Evaded = "Event",
 }
 
 local prediction = MeleeConfig.prediction
@@ -55,6 +57,10 @@ function MeleeController:Start()
 
 	self.Remotes.Confirm:Connect(function(attackId, weaponName, hitTargets, evadedTargets)
 		self:OnConfirm(attackId, weaponName, hitTargets, evadedTargets)
+	end)
+
+	self.Remotes.Evaded:Connect(function(attacker, weaponName)
+		self:OnEvaded(weaponName)
 	end)
 
 	RunService.PreAnimation:Connect(function()
@@ -198,7 +204,8 @@ end
 function MeleeController:PredictHit(hit)
 	local attackId = self.SentAttackId
 
-	if not attackId then
+	-- Evasions are only shown once the server confirms them.
+	if not attackId or hit.evaded then
 		return
 	end
 
@@ -231,6 +238,24 @@ function MeleeController:ShowEvaded(played, target, weaponName)
 	else
 		table.insert(self.Flashes, HitFlash.new(target, hitFlash, hitFlash.evadedColor))
 	end
+end
+
+-- The local player evaded a hit: flash their character and show a rising label.
+function MeleeController:OnEvaded(weaponName)
+	local character = Players.LocalPlayer.Character
+	local weapon = MeleeRegistry.Get(weaponName)
+	local hitFlash = weapon and weapon.Config.effects and weapon.Config.effects.hitFlash
+	local feedback = MeleeConfig.evadeFeedback
+
+	if not character then
+		return
+	end
+
+	if hitFlash then
+		table.insert(self.Flashes, HitFlash.new(character, hitFlash, feedback.color))
+	end
+
+	EvadePopup.Show(character, feedback)
 end
 
 function MeleeController:OnConfirm(attackId, weaponName, hitTargets, evadedTargets)

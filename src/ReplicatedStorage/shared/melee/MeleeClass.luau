@@ -106,12 +106,12 @@ function MeleeClass:GetHitbox(character, attack)
 end
 
 -- Whether a dodge's invulnerability frames cover this moment. They start with the dodge and last
--- dodgeEvasion.iframes, independent of how long the dodge movement lasts.
+-- dodgeEvasion.iframes, or the dodge's own movement duration when that is not set.
 function MeleeClass:IsDodgeProtected(character, now)
 	local evasion = self.Config.dodgeEvasion
-	local dodgeName, elapsed = MovementSimulation.GetLastDodge(character, now)
+	local dodgeName, elapsed, duration = MovementSimulation.GetLastDodge(character, now)
 
-	return evasion ~= nil and dodgeName ~= nil and elapsed >= 0 and elapsed <= evasion.iframes
+	return evasion ~= nil and dodgeName ~= nil and elapsed >= 0 and elapsed <= (evasion.iframes or duration)
 end
 
 function MeleeClass:IsEvading(target, cframe, size, now)
@@ -238,6 +238,15 @@ function MeleeClass:ProcessHits(character, context, report)
 			if target.evaded then
 				if evasion.consumesSwing then
 					record.hit[target.humanoid] = true
+
+					report({
+						attacker = character,
+						target = target.character,
+						humanoid = target.humanoid,
+						weapon = self.Name,
+						attack = attackName,
+						evaded = true,
+					})
 				end
 			else
 				record.hit[target.humanoid] = true

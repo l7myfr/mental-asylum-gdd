@@ -27,6 +27,7 @@ MeleeService.Remotes = {
 	Hit = "Event",
 	Attack = "Event",
 	Confirm = "Event",
+	Evaded = "Event",
 }
 
 MeleeService.AttackHistory = {}
@@ -38,7 +39,11 @@ function MeleeService:Start()
 	Stepper.Bind("Melee", MeleeConfig.simulation.priority, function(deltaTime, now)
 		for character in AgentRegistry.GetAgents() do
 			MeleeSimulation.StepCharacter(character, AgentRegistry.ReadInput(character, now, deltaTime), now, function(hit)
-				self:HoldHit(hit, nil)
+				if hit.evaded then
+					self:NotifyEvaded(hit.target, hit.attacker, hit.weapon)
+				else
+					self:HoldHit(hit, nil)
+				end
 			end)
 		end
 	end)
@@ -198,8 +203,19 @@ function MeleeService:DodgedLate(hit, deadline)
 	return dodgeStart ~= nil and dodgeStart >= hit.time and dodgeStart <= deadline
 end
 
+-- Tells a player victim they evaded a hit, so their client can show it.
+function MeleeService:NotifyEvaded(target, attacker, weaponName)
+	local victim = Players:GetPlayerFromCharacter(target)
+
+	if victim then
+		self.Remotes.Evaded:Fire(victim, attacker, weaponName)
+	end
+end
+
 function MeleeService:ReleaseHit(hit, batch, deadline)
 	if self:DodgedLate(hit, deadline) then
+		self:NotifyEvaded(hit.target, hit.attacker, hit.weapon)
+
 		if batch then
 			table.insert(batch.evaded, hit.target)
 		end
@@ -244,6 +260,10 @@ function MeleeService:Update()
 				evaded = evaded,
 				waiting = 0,
 			}
+
+			for _, target in evaded do
+				self:NotifyEvaded(target, request.attacker, request.weapon.Name)
+			end
 
 			for _, hit in hits do
 				self:HoldHit(hit, batch)
