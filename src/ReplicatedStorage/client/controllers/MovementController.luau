@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MovementConfig = require(ReplicatedStorage.shared.config.MovementConfig)
 local AnimationConfig = require(ReplicatedStorage.shared.config.MovementAnimationConfig)
+local DebugConfig = require(ReplicatedStorage.shared.config.DebugConfig)
 local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
 local Stepper = require(ReplicatedStorage.shared.simulation.Stepper)
 local LocalInput = require(ReplicatedStorage.client.modules.input.LocalInput)
@@ -50,6 +51,10 @@ function MovementController:Step(deltaTime, now)
 
 	if startedDodge then
 		self.Remotes.Dodge:Fire(startedDodge, now)
+
+		if DebugConfig.validation.logEnabled then
+			print(DebugConfig.validation.prefix, "Dodge sent", startedDodge)
+		end
 	end
 end
 

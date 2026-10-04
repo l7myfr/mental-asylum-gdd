@@ -5,10 +5,12 @@ local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
 local AgentRegistry = require(ReplicatedStorage.shared.simulation.AgentRegistry)
 local Stepper = require(ReplicatedStorage.shared.simulation.Stepper)
+local DebugConfig = require(ReplicatedStorage.shared.config.DebugConfig)
 local Clock = require(ReplicatedStorage.shared.utils.Clock)
 
 local attributes = MovementConfig.attributes
 local validation = ChronoSettings.validation
+local validationLog = DebugConfig.validation
 
 local MovementService = {}
 
@@ -26,20 +28,26 @@ function MovementService:Start()
 	end)
 
 	self.Remotes.Dodge:Connect(function(player, dodgeName, start)
-		self:OnDodge(player, dodgeName, start)
+		local rejection = self:OnDodge(player, dodgeName, start)
+
+		if validationLog.logEnabled then
+			print(validationLog.prefix, "Dodge", if rejection then "REJECTED" else "accepted", player.Name, dodgeName,
+				"latency", if type(start) == "number" then ("%.3f"):format(Clock.Now() - start) else "?", rejection or "")
+		end
 	end)
 end
 
+-- Returns a rejection reason, or nil when the dodge is accepted.
 function MovementService:OnDodge(player, dodgeName, start)
 	if type(dodgeName) ~= "string" or type(start) ~= "number" or not MovementConfig.dodge.directions[dodgeName] then
-		return
+		return "malformed"
 	end
 
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
 	if not humanoid or humanoid.Health <= 0 then
-		return
+		return "no living humanoid"
 	end
 
 	local now = Clock.Now()
@@ -51,7 +59,7 @@ function MovementService:OnDodge(player, dodgeName, start)
 		local cooldown = MovementSimulation.GetDodgeSetting(previous.name, "cooldown")
 
 		if start - previous.start < cooldown - validation.cooldownTolerance then
-			return
+			return ("cooldown (%.3fs early)"):format(cooldown - (start - previous.start))
 		end
 	end
 

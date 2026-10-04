@@ -1,4 +1,10 @@
 return {
+	-- Logs swing/dodge requests on the client and the server's verdict, to compare counts.
+	validation = {
+		logEnabled = true,
+		prefix = "[Validation]",
+	},
+
 	hitboxes = {
 		enabledByDefault = true,
 		folderName = "HitboxDebug",
