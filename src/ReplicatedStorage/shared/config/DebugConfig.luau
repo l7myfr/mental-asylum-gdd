@@ -22,6 +22,15 @@ return {
 		clientColor = Color3.fromRGB(60, 200, 255),
 	},
 
+	-- A button that launches every player's character at once, to compare replication side by side.
+	launchTest = {
+		enabled = true,
+		velocity = Vector3.new(70, 45, 0),
+		buttonText = "Launch all players",
+		buttonSize = UDim2.fromOffset(200, 44),
+		buttonPosition = UDim2.new(0.5, 0, 1, -80),
+	},
+
 	hitboxes = {
 		enabledByDefault = true,
 		folderName = "HitboxDebug",

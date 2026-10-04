@@ -1,10 +1,23 @@
+-- Side-by-side test: listed players keep Roblox's default replication, everyone else uses Chrono.
+-- Chrono's death relay only runs in AUTOMATIC mode, so client-side deaths (reset, void) of Chrono
+-- players do not reach the server while this is enabled.
+local comparison = {
+	enabled = true,
+	nativePlayers = {
+		Player2 = true,
+	},
+}
+
 return {
 	config = {
 		CHECK_NEW_VERSION = false,
 		-- LOW also prints idle/respawn interpolation notices that are expected.
 		WARNING_SEVERITY = "MEDIUM",
-		PLAYER_REPLICATION = "AUTOMATIC",
+		PLAYER_REPLICATION = if comparison.enabled then "CUSTOM" else "AUTOMATIC",
 	},
+
+	comparison = comparison,
+	playerEntityType = "PLAYER",
 
 	entityTypes = {
 		PLAYER = {
