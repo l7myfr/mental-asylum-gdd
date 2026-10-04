@@ -20,6 +20,7 @@ function MeleePresenter.new(character, animator)
 	self.Model = nil
 	self.Joint = nil
 	self.AttackId = character:GetAttribute(attributes.attackId)
+	self.AttackStart = character:GetAttribute(attributes.attackStart)
 	self.AttackAnimation = nil
 
 	return self
@@ -64,18 +65,22 @@ function MeleePresenter:UpdateAttack(now)
 	local weapon = self.Weapon
 	local attackId = self.Character:GetAttribute(attributes.attackId)
 
-	if attackId == self.AttackId then
+	local start = self.Character:GetAttribute(attributes.attackStart)
+
+	-- The attack attributes replicate separately, so a new AttackId can arrive while AttackStart still
+	-- holds the previous swing's time. Wait for the new start instead of judging the swing stale.
+	if attackId == self.AttackId or start == self.AttackStart then
 		return
 	end
 
 	self.AttackId = attackId
+	self.AttackStart = start
 
 	local animationSettings = weapon.Config.animation
 	self:StopAttack(animationSettings.fadeOutTime)
 
 	local attackName = self.Character:GetAttribute(attributes.attack)
 	local attack = weapon:GetAttack(attackName)
-	local start = self.Character:GetAttribute(attributes.attackStart)
 
 	if not attack or not start or now - start > attack.duration + animationSettings.renderSlack then
 		return

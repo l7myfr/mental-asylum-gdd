@@ -111,7 +111,9 @@ return {
 				priority = Enum.AnimationPriority.Action3,
 				fadeTime = 0.06,
 				fadeOutTime = 0.15,
-				renderSlack = 0.25,
+				-- How late after a swing ends it may still start playing on other clients. It covers
+				-- network delay plus the difference between two clients' server-time estimates.
+				renderSlack = 1,
 			},
 
 			effects = {
