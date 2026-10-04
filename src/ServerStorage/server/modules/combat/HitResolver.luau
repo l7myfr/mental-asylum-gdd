@@ -131,11 +131,13 @@ function HitResolver:Evaluate(request, target, boxCFrame, size, attackerCFrame, 
 			attack = request.attackName,
 			damage = weapon:ComputeDamage(request.attacker, info, request.attack),
 			position = targetCFrame.Position,
+			-- When the hit happened on the target's own timeline, for late-dodge checks.
+			time = serverTime - delay,
 		},
 	}
 end
 
--- Returns every hit the swing landed.
+-- Returns the hits the swing landed and the targets that evaded it by already dodging.
 function HitResolver:Resolve(request)
 	local attack = request.attack
 	local hitbox = attack.hitbox or request.weapon.Config.hitbox
@@ -145,6 +147,7 @@ function HitResolver:Resolve(request)
 	local samples = math.max(1, math.ceil(span / settings.sampleInterval))
 	local resolved = {}
 	local hits = {}
+	local evaded = {}
 
 	for index = 0, samples do
 		local serverTime = request.start + attack.hitStart + span * index / samples
@@ -163,6 +166,8 @@ function HitResolver:Resolve(request)
 
 						if result.hit then
 							table.insert(hits, result.hit)
+						else
+							table.insert(evaded, target)
 						end
 					end
 				end
@@ -170,10 +175,10 @@ function HitResolver:Resolve(request)
 		end
 	end
 
-	return hits
+	return hits, evaded
 end
 
--- Calls resolved(request, hits) once per swing whose hit window has fully arrived.
+-- Calls resolved(request, hits, evaded) once per swing whose hit window has fully arrived.
 function HitResolver:Update(resolved)
 	local now = Clock.Now()
 

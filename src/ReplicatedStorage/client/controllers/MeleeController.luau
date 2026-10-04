@@ -53,8 +53,8 @@ function MeleeController:Start()
 		self:PlayHit(attacker, target, weaponName)
 	end)
 
-	self.Remotes.Confirm:Connect(function(attackId, weaponName, targets)
-		self:OnConfirm(attackId, weaponName, targets)
+	self.Remotes.Confirm:Connect(function(attackId, weaponName, hitTargets, evadedTargets)
+		self:OnConfirm(attackId, weaponName, hitTargets, evadedTargets)
 	end)
 
 	RunService.PreAnimation:Connect(function()
@@ -141,8 +141,9 @@ function MeleeController:Shake(settings)
 	return nil
 end
 
--- Plays hit effects and returns them so a mispredicted hit can be cancelled.
-function MeleeController:PlayHit(attacker, target, weaponName)
+-- Plays hit effects and returns them so a mispredicted hit can be cancelled. flashColor overrides
+-- the flash color (used for evaded hits).
+function MeleeController:PlayHit(attacker, target, weaponName, flashColor)
 	local weapon = MeleeRegistry.Get(weaponName)
 	local effects = weapon and weapon.Config.effects
 	local played = { shakes = {} }
@@ -154,7 +155,7 @@ function MeleeController:PlayHit(attacker, target, weaponName)
 	local localCharacter = Players.LocalPlayer.Character
 
 	if target and effects.hitFlash then
-		played.flash = HitFlash.new(target, effects.hitFlash)
+		played.flash = HitFlash.new(target, effects.hitFlash, flashColor)
 		table.insert(self.Flashes, played.flash)
 	end
 
@@ -216,14 +217,30 @@ function MeleeController:PredictHit(hit)
 	end
 end
 
-function MeleeController:OnConfirm(attackId, weaponName, targets)
+-- Shows an evaded hit in the weapon's evaded color, recoloring the predicted flash if it is still playing.
+function MeleeController:ShowEvaded(played, target, weaponName)
+	local weapon = MeleeRegistry.Get(weaponName)
+	local hitFlash = weapon and weapon.Config.effects and weapon.Config.effects.hitFlash
+
+	if not hitFlash then
+		return
+	end
+
+	if played and played.flash and table.find(self.Flashes, played.flash) then
+		played.flash:SetColor(hitFlash.evadedColor)
+	else
+		table.insert(self.Flashes, HitFlash.new(target, hitFlash, hitFlash.evadedColor))
+	end
+end
+
+function MeleeController:OnConfirm(attackId, weaponName, hitTargets, evadedTargets)
 	local pending = self.Predictions[attackId]
-	local confirmed = {}
+	local resolved = {}
 
 	self.Predictions[attackId] = nil
 
-	for _, target in if type(targets) == "table" then targets else {} do
-		confirmed[target] = true
+	for _, target in if type(hitTargets) == "table" then hitTargets else {} do
+		resolved[target] = true
 
 		-- The server can land hits the client missed; play those now.
 		if not (pending and pending.hits[target]) then
@@ -231,8 +248,13 @@ function MeleeController:OnConfirm(attackId, weaponName, targets)
 		end
 	end
 
+	for _, target in if type(evadedTargets) == "table" then evadedTargets else {} do
+		resolved[target] = true
+		self:ShowEvaded(pending and pending.hits[target], target, weaponName)
+	end
+
 	if pending then
-		self:CancelHits(pending, confirmed)
+		self:CancelHits(pending, resolved)
 	end
 end
 

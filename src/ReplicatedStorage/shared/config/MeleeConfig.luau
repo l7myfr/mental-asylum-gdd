@@ -12,7 +12,7 @@ return {
 	-- Hit effects are played as soon as the client detects a hit, then kept or cancelled once the
 	-- server confirms the swing. Unconfirmed predictions are cancelled after confirmTimeout.
 	prediction = {
-		confirmTimeout = 2,
+		confirmTimeout = 3,
 		cancelFadeOut = 0.1,
 	},
 
@@ -57,6 +57,8 @@ return {
 			dodgeEvasion = {
 				invulnerable = true,
 				grace = 0.1,
+				-- A dodge started up to this long after being hit cancels the hit. Damage is held this long.
+				reactionWindow = 0.15,
 				consumesSwing = true,
 				hitboxScale = 0.35,
 			},
@@ -103,6 +105,7 @@ return {
 			effects = {
 				hitFlash = {
 					color = Color3.fromRGB(255, 70, 70),
+					evadedColor = Color3.fromRGB(255, 220, 60),
 					fillStart = 0.35,
 					outlineStart = 0.1,
 					damping = 1,

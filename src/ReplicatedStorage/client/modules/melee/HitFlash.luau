@@ -5,12 +5,12 @@ local Spring = require(ReplicatedStorage.client.modules.utils.Spring)
 local HitFlash = {}
 HitFlash.__index = HitFlash
 
-function HitFlash.new(character, settings)
+function HitFlash.new(character, settings, color)
 	local self = setmetatable({}, HitFlash)
 
 	local highlight = Instance.new("Highlight")
-	highlight.FillColor = settings.color
-	highlight.OutlineColor = settings.color
+	highlight.FillColor = color or settings.color
+	highlight.OutlineColor = color or settings.color
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.FillTransparency = settings.fillStart
 	highlight.OutlineTransparency = settings.outlineStart
@@ -33,6 +33,11 @@ function HitFlash:Update()
 	self.Highlight.OutlineTransparency = settings.outlineStart + (1 - settings.outlineStart) * alpha
 
 	return alpha < 0.99 and self.Highlight.Parent ~= nil
+end
+
+function HitFlash:SetColor(color)
+	self.Highlight.FillColor = color
+	self.Highlight.OutlineColor = color
 end
 
 function HitFlash:Destroy()

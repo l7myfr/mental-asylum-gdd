@@ -1,7 +1,10 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local MeleeConfig = require(ReplicatedStorage.shared.config.MeleeConfig)
+local MovementConfig = require(ReplicatedStorage.shared.config.MovementConfig)
+local MeleeRegistry = require(ReplicatedStorage.shared.melee.MeleeRegistry)
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local MeleeSimulation = require(ReplicatedStorage.shared.simulation.MeleeSimulation)
 local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
@@ -11,6 +14,7 @@ local Clock = require(ReplicatedStorage.shared.utils.Clock)
 local HitResolver = require(ServerStorage.server.modules.combat.HitResolver)
 
 local attributes = MeleeConfig.attributes
+local movementAttributes = MovementConfig.attributes
 local validation = ChronoSettings.validation
 
 local MeleeService = {}
@@ -30,7 +34,7 @@ function MeleeService:Start()
 	Stepper.Bind("Melee", MeleeConfig.simulation.priority, function(deltaTime, now)
 		for character in AgentRegistry.GetAgents() do
 			MeleeSimulation.StepCharacter(character, AgentRegistry.ReadInput(character, now, deltaTime), now, function(hit)
-				table.insert(self.PendingHits, hit)
+				self:HoldHit(hit, nil)
 			end)
 		end
 	end)
@@ -38,7 +42,7 @@ function MeleeService:Start()
 	self.Remotes.Attack:Connect(function(player, attackName, comboIndex, attackId, start, delays)
 		-- A rejected swing confirms no hits, so the client cancels any hit effects it predicted.
 		if not self:OnAttack(player, attackName, comboIndex, attackId, start, delays) then
-			self.Remotes.Confirm:Fire(player, attackId, nil, {})
+			self.Remotes.Confirm:Fire(player, attackId, nil, {}, {})
 		end
 	end)
 end
@@ -140,26 +144,89 @@ function MeleeService:ApplyHit(hit, attackerPlayer)
 	return true
 end
 
-function MeleeService:Update()
-	local pending = self.PendingHits
-	self.PendingHits = {}
+function MeleeService:GetReactionWindow(hit)
+	local weapon = MeleeRegistry.Get(hit.weapon)
+	local evasion = weapon and weapon.Config.dodgeEvasion
 
-	for _, hit in pending do
-		self:ApplyHit(hit)
+	return evasion and evasion.reactionWindow or 0
+end
+
+-- Hits are held for the weapon's reaction window before damage, so a dodge started just after being
+-- hit still evades it. The victim's latency is added so a dodge sent in time has arrived.
+function MeleeService:HoldHit(hit, batch)
+	local victim = Players:GetPlayerFromCharacter(hit.target)
+
+	hit.time = hit.time or Clock.Now()
+	table.insert(self.PendingHits, {
+		hit = hit,
+		batch = batch,
+		releaseAt = hit.time + self:GetReactionWindow(hit) + (if victim then victim:GetNetworkPing() else 0),
+	})
+
+	if batch then
+		batch.waiting += 1
+	end
+end
+
+function MeleeService:DodgedLate(hit)
+	local dodgeStart = hit.target:GetAttribute(movementAttributes.dodgeStart)
+
+	return dodgeStart ~= nil and dodgeStart >= hit.time and dodgeStart <= hit.time + self:GetReactionWindow(hit)
+end
+
+function MeleeService:ReleaseHit(hit, batch)
+	if self:DodgedLate(hit) then
+		if batch then
+			table.insert(batch.evaded, hit.target)
+		end
+	elseif self:ApplyHit(hit, batch and batch.player) and batch then
+		table.insert(batch.hits, hit.target)
+	end
+
+	if batch then
+		batch.waiting -= 1
+
+		if batch.waiting == 0 then
+			self:Confirm(batch)
+		end
+	end
+end
+
+function MeleeService:Confirm(batch)
+	if batch.player.Parent then
+		self.Remotes.Confirm:Fire(batch.player, batch.attackId, batch.weapon, batch.hits, batch.evaded)
+	end
+end
+
+function MeleeService:Update()
+	local now = Clock.Now()
+
+	for index = #self.PendingHits, 1, -1 do
+		local pending = self.PendingHits[index]
+
+		if now >= pending.releaseAt then
+			table.remove(self.PendingHits, index)
+			self:ReleaseHit(pending.hit, pending.batch)
+		end
 	end
 
 	if self.Resolver then
-		self.Resolver:Update(function(request, hits)
-			local confirmed = {}
+		self.Resolver:Update(function(request, hits, evaded)
+			local batch = {
+				player = request.player,
+				attackId = request.attackId,
+				weapon = request.weapon.Name,
+				hits = {},
+				evaded = evaded,
+				waiting = 0,
+			}
 
 			for _, hit in hits do
-				if self:ApplyHit(hit, request.player) then
-					table.insert(confirmed, hit.target)
-				end
+				self:HoldHit(hit, batch)
 			end
 
-			if request.player.Parent then
-				self.Remotes.Confirm:Fire(request.player, request.attackId, request.weapon.Name, confirmed)
+			if batch.waiting == 0 then
+				self:Confirm(batch)
 			end
 		end)
 	end
