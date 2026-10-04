@@ -9,17 +9,14 @@ return {
 	entityTypes = {
 		PLAYER = {
 			BUFFER = 0,
-			TICK_RATE = 1 / 30,
+			TICK_RATE = 1 / 60,
 			MODEL_REPLICATION_MODE = "NATIVE",
 			HALF_TICK_DISTANCE = math.huge,
 			ASSEMBLY_ROOT_PART_CHECK = true,
 		},
 		NPC = {
 			BUFFER = 0,
-			TICK_RATE = 1 / 30,
-			-- NPCs are server-simulated, so Roblox already replicates them smoothly. Chrono is only used
-			-- for the server-side snapshot history that lag compensation rewinds.
-			INTERPOLATION_MODE = "NONE",
+			TICK_RATE = 1 / 60,
 			STORE_SNAPSHOTS = true,
 			MODEL_REPLICATION_MODE = "NATIVE",
 			HALF_TICK_DISTANCE = math.huge,
@@ -32,7 +29,7 @@ return {
 	lagCompensation = {
 		maxRewind = 0.6,
 		defaultViewDelay = 0.12,
-		sampleInterval = 1 / 30,
+		sampleInterval = 1 / 60,
 		resolveBuffer = 0.08,
 		viewRange = 60,
 	},
