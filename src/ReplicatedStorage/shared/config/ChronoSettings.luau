@@ -1,7 +1,8 @@
 return {
 	config = {
 		CHECK_NEW_VERSION = false,
-		WARNING_SEVERITY = "LOW",
+		-- LOW also prints idle/respawn interpolation notices that are expected.
+		WARNING_SEVERITY = "MEDIUM",
 		PLAYER_REPLICATION = "AUTOMATIC",
 	},
 
