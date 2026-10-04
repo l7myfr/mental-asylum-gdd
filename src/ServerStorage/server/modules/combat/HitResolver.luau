@@ -135,7 +135,8 @@ function HitResolver:Evaluate(request, target, boxCFrame, size, attackerCFrame, 
 	}
 end
 
-function HitResolver:Resolve(request, report)
+-- Returns every hit the swing landed.
+function HitResolver:Resolve(request)
 	local attack = request.attack
 	local hitbox = attack.hitbox or request.weapon.Config.hitbox
 	-- The attacker's own position for a given moment reaches the server one-way latency later.
@@ -143,7 +144,7 @@ function HitResolver:Resolve(request, report)
 	local span = attack.hitEnd - attack.hitStart
 	local samples = math.max(1, math.ceil(span / settings.sampleInterval))
 	local resolved = {}
-	local count = 0
+	local hits = {}
 
 	for index = 0, samples do
 		local serverTime = request.start + attack.hitStart + span * index / samples
@@ -154,24 +155,26 @@ function HitResolver:Resolve(request, report)
 			local boxCFrame = attackerCFrame * hitbox.offset
 
 			for _, target in getCandidates(request.attacker) do
-				if not resolved[target] and count < hitbox.maxTargets then
+				if not resolved[target] and #hits < hitbox.maxTargets then
 					local result = self:Evaluate(request, target, boxCFrame, hitbox.size, attackerCFrame, serverTime, processTime)
 
 					if result then
 						resolved[target] = true
 
 						if result.hit then
-							count += 1
-							report(result.hit)
+							table.insert(hits, result.hit)
 						end
 					end
 				end
 			end
 		end
 	end
+
+	return hits
 end
 
-function HitResolver:Update(report)
+-- Calls resolved(request, hits) once per swing whose hit window has fully arrived.
+function HitResolver:Update(resolved)
 	local now = Clock.Now()
 
 	for index = #self.Pending, 1, -1 do
@@ -182,7 +185,7 @@ function HitResolver:Update(report)
 			table.remove(self.Pending, index)
 		elseif now >= request.start + request.attack.hitEnd + latency + settings.resolveBuffer then
 			table.remove(self.Pending, index)
-			self:Resolve(request, report)
+			resolved(request, self:Resolve(request))
 		end
 	end
 end

@@ -9,6 +9,13 @@ return {
 		priority = 200,
 	},
 
+	-- Hit effects are played as soon as the client detects a hit, then kept or cancelled once the
+	-- server confirms the swing. Unconfirmed predictions are cancelled after confirmTimeout.
+	prediction = {
+		confirmTimeout = 2,
+		cancelFadeOut = 0.1,
+	},
+
 	starterMelee = "Dagger",
 	characterLoadTimeout = 10,
 	entityTag = "Entity",

@@ -18,6 +18,7 @@ local MeleeService = {}
 MeleeService.Remotes = {
 	Hit = "Event",
 	Attack = "Event",
+	Confirm = "Event",
 }
 
 MeleeService.AttackHistory = {}
@@ -35,10 +36,14 @@ function MeleeService:Start()
 	end)
 
 	self.Remotes.Attack:Connect(function(player, attackName, comboIndex, attackId, start, delays)
-		self:OnAttack(player, attackName, comboIndex, attackId, start, delays)
+		-- A rejected swing confirms no hits, so the client cancels any hit effects it predicted.
+		if not self:OnAttack(player, attackName, comboIndex, attackId, start, delays) then
+			self.Remotes.Confirm:Fire(player, attackId, nil, {})
+		end
 	end)
 end
 
+-- Returns true when the swing is accepted and queued for hit resolution.
 function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, delays)
 	if type(attackName) ~= "string" or type(attackId) ~= "number" or type(start) ~= "number" then
 		return
@@ -88,8 +93,11 @@ function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, 
 		attack = attack,
 		start = start,
 		latency = latency,
+		attackId = attackId,
 		delays = HitResolver.SanitizeDelays(delays),
 	})
+
+	return true
 end
 
 function MeleeService:CharacterAdded(player, character)
@@ -112,15 +120,24 @@ function MeleeService:Unequip(character)
 	MeleeSimulation.Equip(character, nil)
 end
 
-function MeleeService:ApplyHit(hit)
+-- Returns true when the hit is applied. The attacking player (if any) learns about its hits through
+-- Confirm instead of the broadcast, since it already predicted them.
+function MeleeService:ApplyHit(hit, attackerPlayer)
 	local humanoid = hit.humanoid
 
 	if not humanoid.Parent or humanoid.Health <= 0 then
-		return
+		return false
 	end
 
 	humanoid:TakeDamage(hit.damage)
-	self.Remotes.Hit:FireAll(hit.attacker, hit.target, hit.position, hit.weapon)
+
+	if attackerPlayer then
+		self.Remotes.Hit:FireExcept(attackerPlayer, hit.attacker, hit.target, hit.position, hit.weapon)
+	else
+		self.Remotes.Hit:FireAll(hit.attacker, hit.target, hit.position, hit.weapon)
+	end
+
+	return true
 end
 
 function MeleeService:Update()
@@ -132,8 +149,18 @@ function MeleeService:Update()
 	end
 
 	if self.Resolver then
-		self.Resolver:Update(function(hit)
-			self:ApplyHit(hit)
+		self.Resolver:Update(function(request, hits)
+			local confirmed = {}
+
+			for _, hit in hits do
+				if self:ApplyHit(hit, request.player) then
+					table.insert(confirmed, hit.target)
+				end
+			end
+
+			if request.player.Parent then
+				self.Remotes.Confirm:Fire(request.player, request.attackId, request.weapon.Name, confirmed)
+			end
 		end)
 	end
 end
