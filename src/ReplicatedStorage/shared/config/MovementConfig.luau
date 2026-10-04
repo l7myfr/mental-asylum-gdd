@@ -22,6 +22,8 @@ return {
 	},
 
 	facing = {
+		driverName = "FacingAlign",
+		attachmentName = "FacingAttachment",
 		moveSharpness = 14,
 		cameraSharpness = 16,
 		dodgeSharpness = 30,

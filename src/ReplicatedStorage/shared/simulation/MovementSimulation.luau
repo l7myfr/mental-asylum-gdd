@@ -54,6 +54,29 @@ local function smoothTurn(from, to, sharpness, deltaTime)
 	return fromYaw(fromAngle + difference * (1 - math.exp(-sharpness * deltaTime)))
 end
 
+-- Rotating through a constraint keeps the root physically simulated; writing root.CFrame every
+-- frame counts as a teleport and breaks native replication of server-simulated characters.
+local function getFacingDriver(root)
+	local driver = root:FindFirstChild(facingConfig.driverName)
+
+	if driver then
+		return driver
+	end
+
+	local attachment = Instance.new("Attachment")
+	attachment.Name = facingConfig.attachmentName
+	attachment.Parent = root
+
+	driver = Instance.new("AlignOrientation")
+	driver.Name = facingConfig.driverName
+	driver.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	driver.Attachment0 = attachment
+	driver.RigidityEnabled = true
+	driver.Parent = root
+
+	return driver
+end
+
 local function getRight(look)
 	return Vector3.new(-look.Z, 0, look.X)
 end
@@ -224,7 +247,7 @@ function MovementSimulation.StepCharacter(character, input, deltaTime, now)
 
 	humanoid.AutoRotate = false
 	humanoid.WalkSpeed = moveSpeed
-	root.CFrame = CFrame.lookAt(root.Position, root.Position + facing)
+	getFacingDriver(root).CFrame = CFrame.lookAt(Vector3.zero, facing)
 
 	if moveSpeed > MovementConfig.stopThreshold then
 		humanoid:MoveTo(root.Position + moveDirection * MovementConfig.steerDistance)
