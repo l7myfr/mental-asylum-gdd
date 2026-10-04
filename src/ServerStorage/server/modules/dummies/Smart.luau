@@ -107,8 +107,8 @@ local function record(memory, target, now, settings)
 		attackName = target:GetAttribute(meleeAttributes.attack),
 		attackStart = target:GetAttribute(meleeAttributes.attackStart),
 		attackId = target:GetAttribute(meleeAttributes.attackId),
+		dodgeName = target:GetAttribute(movementAttributes.dodge),
 		dodgeStart = target:GetAttribute(movementAttributes.dodgeStart),
-		dodgeReady = target:GetAttribute(movementAttributes.dodgeReady) or 0,
 		health = humanoid.Health / humanoid.MaxHealth,
 	})
 
@@ -138,6 +138,18 @@ local function project(seen, now, lead)
 end
 
 -- Situation
+
+-- Time since the target's last seen dodge started, and that dodge's visible movement duration. The
+-- dummy judges dodges by what it can see, never by hidden invulnerability or exact cooldown state.
+local function getSeenDodge(context)
+	local seen = context.seen
+
+	if not seen.dodgeName or not seen.dodgeStart or not dodgeDirections[seen.dodgeName] then
+		return nil
+	end
+
+	return context.now - seen.dodgeStart, seen.dodgeName
+end
 
 local function getThreat(context)
 	local weapon = context.targetWeapon
@@ -170,13 +182,17 @@ local function getThreat(context)
 	}
 end
 
--- An opening a player would punish: the target's dodge is recharging, or its swing just ended
--- without a follow-up.
+-- An opening a player would punish: the target just finished a dodge (so it is recharging; the
+-- cooldown is game knowledge), or its swing just ended without a follow-up.
 local function hasOpening(context)
 	local seen = context.seen
-	local target = context.target
+	local sinceDodge, dodgeName = getSeenDodge(context)
 
-	if seen.dodgeReady > context.now and not (context.weapon and context.weapon:IsDodgeProtected(target, context.now)) then
+	if
+		sinceDodge
+		and sinceDodge > MovementSimulation.GetDodgeSetting(dodgeName, "duration")
+		and sinceDodge < MovementSimulation.GetDodgeSetting(dodgeName, "cooldown")
+	then
 		return true
 	end
 
@@ -398,7 +414,14 @@ local function attack(context, input)
 
 	local probe = weapon:GetAttack(weapon.Config.combo[1])
 
-	if engage.respectDodge and weapon:IsDodgeProtected(context.target, context.now + probe.hitStart) then
+	-- Holds a swing while the target is visibly mid-dodge, the way a player would.
+	local sinceDodge, dodgeName = getSeenDodge(context)
+
+	if
+		engage.respectDodge
+		and sinceDodge
+		and sinceDodge + probe.hitStart < MovementSimulation.GetDodgeSetting(dodgeName, "duration")
+	then
 		return
 	end
 
