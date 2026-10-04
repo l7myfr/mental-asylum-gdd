@@ -103,16 +103,19 @@ function MeleeClass:GetHitbox(character, attack)
 	return root.CFrame * hitbox.offset, hitbox.size, hitbox
 end
 
+-- Whether a dodge's invulnerability frames cover this moment. They start with the dodge and last
+-- dodgeEvasion.iframes, independent of how long the dodge movement lasts.
+function MeleeClass:IsDodgeProtected(character, now)
+	local evasion = self.Config.dodgeEvasion
+	local dodgeName, elapsed = MovementSimulation.GetLastDodge(character, now)
+
+	return evasion ~= nil and dodgeName ~= nil and elapsed >= 0 and elapsed <= evasion.iframes
+end
+
 function MeleeClass:IsEvading(target, cframe, size, now)
 	local evasion = self.Config.dodgeEvasion
 
-	if not evasion or not target.root then
-		return false
-	end
-
-	local dodgeName, elapsed, duration = MovementSimulation.GetLastDodge(target.character, now)
-
-	if not dodgeName or elapsed < 0 or elapsed > duration + evasion.grace then
+	if not evasion or not target.root or not self:IsDodgeProtected(target.character, now) then
 		return false
 	end
 

@@ -98,12 +98,6 @@ local function predictHitbox(attacker, weapon, attack, leadTime)
 	return cframe + velocity * leadTime, size
 end
 
-local function isEvasive(character, time, evasion)
-	local dodgeName, elapsed, duration = MovementSimulation.GetLastDodge(character, time)
-
-	return dodgeName ~= nil and elapsed >= 0 and elapsed <= duration + evasion.grace
-end
-
 local function assessActiveAttack(agent, target, weapon, now, settings)
 	local memory = agent.Memory
 	local _, attack, elapsed = weapon:GetActiveAttack(target, now)
@@ -260,9 +254,7 @@ local function wantsToAttack(agent, target, now, settings, dodging)
 
 	local attack = weapon:GetAttack(weapon.Config.combo[1])
 	local leadTime = (attack.hitStart + attack.hitEnd) * 0.5
-	local evasion = weapon.Config.dodgeEvasion
-
-	if attackSettings.respectDodge and evasion and isEvasive(target, now + attack.hitStart, evasion) then
+	if attackSettings.respectDodge and weapon:IsDodgeProtected(target, now + attack.hitStart) then
 		return false
 	end
 

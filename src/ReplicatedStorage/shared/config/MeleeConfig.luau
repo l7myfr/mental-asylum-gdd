@@ -56,7 +56,8 @@ return {
 
 			dodgeEvasion = {
 				invulnerable = true,
-				grace = 0.1,
+				-- Invulnerability from the start of a dodge. Dodges themselves last 0.34-0.4s.
+				iframes = 0.2,
 				-- A dodge started up to this long after being hit cancels the hit. Damage is held this long.
 				reactionWindow = 0.15,
 				consumesSwing = true,
