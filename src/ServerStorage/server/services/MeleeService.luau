@@ -54,6 +54,7 @@ function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, 
 	end
 
 	local now = Clock.Now()
+	local latency = math.clamp(now - start, 0, validation.maxLatency)
 	start = math.clamp(start, now - validation.maxLatency, now)
 
 	local history = self.AttackHistory[player]
@@ -86,6 +87,7 @@ function MeleeService:OnAttack(player, attackName, comboIndex, attackId, start, 
 		attackName = attackName,
 		attack = attack,
 		start = start,
+		latency = latency,
 		delays = HitResolver.SanitizeDelays(delays),
 	})
 end

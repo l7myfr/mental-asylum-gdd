@@ -8,6 +8,9 @@ return {
 		-- The buffer still grows dynamically up to MAX_BUFFER for jittery connections.
 		MIN_BUFFER = 0.035,
 		MAX_BUFFER = 0.105,
+		-- History per entity (2.5s at 60Hz). Hit resolution rewinds up to the hit window plus the
+		-- attacker's latency both ways plus the view delay, which the default 30 snapshots can't cover.
+		MAX_SNAPSHOT_COUNT = 150,
 	},
 
 	entityTypes = {

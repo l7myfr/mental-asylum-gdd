@@ -81,10 +81,12 @@ function HitResolver:Queue(request)
 	table.insert(self.Pending, request)
 end
 
+-- How far in the past the attacker saw this target: the target's state travelled server -> attacker
+-- (one-way latency) and was then drawn behind Chrono's interpolation buffer (reported by the client).
 function HitResolver:GetDelay(request, entity)
 	local delay = entity and request.delays[tostring(entity.id)]
 
-	return delay or settings.defaultViewDelay
+	return request.latency + (delay or settings.defaultViewDelay)
 end
 
 function HitResolver:Evaluate(request, target, boxCFrame, size, attackerCFrame, serverTime, processTime)
@@ -136,7 +138,8 @@ end
 function HitResolver:Resolve(request, report)
 	local attack = request.attack
 	local hitbox = attack.hitbox or request.weapon.Config.hitbox
-	local latency = if request.player then request.player:GetNetworkPing() else 0
+	-- The attacker's own position for a given moment reaches the server one-way latency later.
+	local latency = request.latency
 	local span = attack.hitEnd - attack.hitStart
 	local samples = math.max(1, math.ceil(span / settings.sampleInterval))
 	local resolved = {}
@@ -173,7 +176,7 @@ function HitResolver:Update(report)
 
 	for index = #self.Pending, 1, -1 do
 		local request = self.Pending[index]
-		local latency = if request.player then request.player:GetNetworkPing() else 0
+		local latency = request.latency
 
 		if not request.attacker.Parent then
 			table.remove(self.Pending, index)
