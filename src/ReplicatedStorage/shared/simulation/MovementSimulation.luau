@@ -171,9 +171,16 @@ function MovementSimulation.StepDodge(character, input, moveVector, look, ground
 	local pressed = input.Dodge == true and character:GetAttribute(attributes.dodgeHeld) ~= true
 	character:SetAttribute(attributes.dodgeHeld, input.Dodge == true)
 
+	if pressed then
+		character:SetAttribute(attributes.dodgeBuffer, now)
+	end
+
+	-- A buffered press fires on the first frame a dodge is allowed, so early presses aren't lost.
+	local buffered = character:GetAttribute(attributes.dodgeBuffer)
+	local wanted = buffered ~= nil and now - buffered <= dodgeConfig.inputBuffer
 	local activeName, elapsed = MovementSimulation.GetDodge(character, now)
 
-	if activeName or not pressed then
+	if activeName or not wanted then
 		return activeName, elapsed, false
 	end
 
@@ -187,6 +194,7 @@ function MovementSimulation.StepDodge(character, input, moveVector, look, ground
 
 	local dodgeName, worldDirection = MovementSimulation.ResolveDodge(moveVector, look)
 
+	character:SetAttribute(attributes.dodgeBuffer, nil)
 	character:SetAttribute(attributes.dodge, dodgeName)
 	character:SetAttribute(attributes.dodgeStart, now)
 	character:SetAttribute(attributes.dodgeDirection, worldDirection)
@@ -196,7 +204,8 @@ function MovementSimulation.StepDodge(character, input, moveVector, look, ground
 	return dodgeName, 0, true
 end
 
-function MovementSimulation.StepCharacter(character, input, deltaTime, now)
+-- attacking: whether the character is mid-swing; it then turns toward its aim (input.Look).
+function MovementSimulation.StepCharacter(character, input, deltaTime, now, attacking)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
 
@@ -256,6 +265,9 @@ function MovementSimulation.StepCharacter(character, input, deltaTime, now)
 		moveSpeed = MovementSimulation.GetDodgeSpeed(dodgeName, dodgeElapsed)
 		facingTarget = character:GetAttribute(attributes.dodgeFacing)
 		sharpness = facingConfig.dodgeSharpness
+	elseif attacking then
+		facingTarget = look
+		sharpness = facingConfig.attackSharpness
 	elseif input.FaceCamera == true then
 		facingTarget = look
 		sharpness = facingConfig.cameraSharpness

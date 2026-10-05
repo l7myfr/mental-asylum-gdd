@@ -38,6 +38,9 @@ return {
 		outlineTransparency = 0.1,
 	},
 
+	-- An attack press is remembered this long and fires as soon as an attack is allowed.
+	inputBuffer = 0.2,
+
 	starterMelee = "Dagger",
 	characterLoadTimeout = 10,
 	entityTag = "Entity",
@@ -50,6 +53,7 @@ return {
 		combo = "Combo",
 		attackReady = "AttackReady",
 		attackHeld = "AttackHeld",
+		attackBuffer = "AttackBuffer",
 	},
 
 	weapons = {
@@ -145,6 +149,10 @@ return {
 					outlineStart = 0.1,
 					damping = 1,
 					speed = 9,
+				},
+				-- Both characters' animations freeze briefly when a hit lands.
+				hitStop = {
+					duration = 0.07,
 				},
 				attackerShake = {
 					magnitude = 1.2,

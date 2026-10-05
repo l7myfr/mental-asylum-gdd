@@ -25,6 +25,8 @@ return {
 		driverName = "FacingAlign",
 		attachmentName = "FacingAttachment",
 		moveSharpness = 14,
+		-- Turning toward the aim (camera / target) while swinging.
+		attackSharpness = 30,
 		cameraSharpness = 16,
 		dodgeSharpness = 30,
 	},
@@ -39,6 +41,8 @@ return {
 		minimumInputDot = 0.35,
 		fallback = "back",
 		requiresGround = true,
+		-- A press is remembered this long and fires as soon as a dodge is allowed.
+		inputBuffer = 0.2,
 
 		directions = {
 			back = {
@@ -79,6 +83,7 @@ return {
 		dodgeFacing = "DodgeFacing",
 		dodgeReady = "DodgeReady",
 		dodgeHeld = "DodgeHeld",
+		dodgeBuffer = "DodgeBuffer",
 		staggerStart = "StaggerStart",
 		staggerEnd = "StaggerEnd",
 	},

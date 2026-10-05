@@ -9,6 +9,7 @@ local CameraShaker = require(ReplicatedStorage.client.modules.utils.CameraShaker
 local MeleePresenter = require(ReplicatedStorage.client.modules.melee.MeleePresenter)
 local HitFlash = require(ReplicatedStorage.client.modules.melee.HitFlash)
 local CharacterPopup = require(ReplicatedStorage.client.modules.melee.CharacterPopup)
+local HitStop = require(ReplicatedStorage.client.modules.melee.HitStop)
 local AnimationTracks = require(ReplicatedStorage.client.modules.animation.AnimationTracks)
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local Replication = require(ReplicatedStorage.shared.simulation.Replication)
@@ -118,6 +119,8 @@ end
 function MeleeController:Render()
 	local clock = os.clock()
 
+	HitStop.Update()
+
 	for attackId, pending in self.Predictions do
 		if clock >= pending.expires then
 			self.Predictions[attackId] = nil
@@ -163,6 +166,11 @@ function MeleeController:PlayHit(attacker, target, weaponName, flashColor)
 	if target and effects.hitFlash then
 		played.flash = HitFlash.new(target, effects.hitFlash, flashColor)
 		table.insert(self.Flashes, played.flash)
+	end
+
+	if effects.hitStop then
+		HitStop.Apply(attacker, effects.hitStop.duration)
+		HitStop.Apply(target, effects.hitStop.duration)
 	end
 
 	local attackerShake = attacker == localCharacter and self:Shake(effects.attackerShake)

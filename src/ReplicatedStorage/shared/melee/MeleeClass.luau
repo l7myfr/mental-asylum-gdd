@@ -44,10 +44,10 @@ end
 
 function MeleeClass:WantsAttack(context)
 	if self.Config.holdToAttack then
-		return context.held
+		return context.held or context.buffered
 	end
 
-	return context.pressed
+	return context.pressed or context.buffered
 end
 
 function MeleeClass:CanAttack(character, context)
@@ -98,6 +98,7 @@ function MeleeClass:Step(character, context)
 	local attackName, comboIndex = self:SelectAttack(character, context)
 
 	if self:GetAttack(attackName) then
+		character:SetAttribute(attributes.attackBuffer, nil)
 		self:StartAttack(character, attackName, comboIndex, context)
 	end
 end

@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MovementConfig = require(ReplicatedStorage.shared.config.MovementConfig)
 local ChronoSettings = require(ReplicatedStorage.shared.config.ChronoSettings)
 local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
+local MeleeSimulation = require(ReplicatedStorage.shared.simulation.MeleeSimulation)
 local AgentRegistry = require(ReplicatedStorage.shared.simulation.AgentRegistry)
 local Stepper = require(ReplicatedStorage.shared.simulation.Stepper)
 local Clock = require(ReplicatedStorage.shared.utils.Clock)
@@ -21,7 +22,8 @@ MovementService.DodgeHistory = {}
 function MovementService:Start()
 	Stepper.Bind("Movement", MovementConfig.simulation.priority, function(deltaTime, now)
 		for character in AgentRegistry.GetAgents() do
-			MovementSimulation.StepCharacter(character, AgentRegistry.ReadInput(character, now, deltaTime), deltaTime, now)
+			local attacking = MeleeSimulation.IsAttacking(character, now)
+			MovementSimulation.StepCharacter(character, AgentRegistry.ReadInput(character, now, deltaTime), deltaTime, now, attacking)
 		end
 	end)
 

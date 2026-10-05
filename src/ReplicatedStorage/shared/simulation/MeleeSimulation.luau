@@ -18,6 +18,12 @@ function MeleeSimulation.GetWeapon(character)
 	return MeleeRegistry.Get(character:GetAttribute(attributes.melee))
 end
 
+function MeleeSimulation.IsAttacking(character, now)
+	local weapon = MeleeSimulation.GetWeapon(character)
+
+	return weapon ~= nil and weapon:GetActiveAttack(character, now) ~= nil
+end
+
 function MeleeSimulation.StepCharacter(character, input, now, report)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 
@@ -26,8 +32,12 @@ function MeleeSimulation.StepCharacter(character, input, now, report)
 	end
 
 	local held = input.Attack == true
-	local wasHeld = character:GetAttribute(attributes.attackHeld) == true
+	local pressed = held and character:GetAttribute(attributes.attackHeld) ~= true
 	character:SetAttribute(attributes.attackHeld, held)
+
+	if pressed then
+		character:SetAttribute(attributes.attackBuffer, now)
+	end
 
 	local weapon = MeleeSimulation.GetWeapon(character)
 
@@ -38,7 +48,9 @@ function MeleeSimulation.StepCharacter(character, input, now, report)
 	local context = {
 		now = now,
 		held = held,
-		pressed = held and not wasHeld,
+		pressed = pressed,
+		-- A press is remembered for MeleeConfig.inputBuffer and fires as soon as an attack is allowed.
+		buffered = (character:GetAttribute(attributes.attackBuffer) or -math.huge) >= now - MeleeConfig.inputBuffer,
 		dodging = MovementSimulation.GetDodge(character, now) ~= nil,
 		speed = character:GetAttribute(movementAttributes.speed) or 0,
 		sprinting = character:GetAttribute(movementAttributes.sprinting) == true,

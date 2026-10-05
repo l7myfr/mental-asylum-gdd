@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MovementConfig = require(ReplicatedStorage.shared.config.MovementConfig)
 local AnimationConfig = require(ReplicatedStorage.shared.config.MovementAnimationConfig)
 local MovementSimulation = require(ReplicatedStorage.shared.simulation.MovementSimulation)
+local MeleeSimulation = require(ReplicatedStorage.shared.simulation.MeleeSimulation)
 local Stepper = require(ReplicatedStorage.shared.simulation.Stepper)
 local LocalInput = require(ReplicatedStorage.client.modules.input.LocalInput)
 local MovementAnimator = require(ReplicatedStorage.client.modules.animation.MovementAnimator)
@@ -46,7 +47,8 @@ function MovementController:Step(deltaTime, now)
 		return
 	end
 
-	local startedDodge = MovementSimulation.StepCharacter(character, LocalInput.Read(now), deltaTime, now)
+	local attacking = MeleeSimulation.IsAttacking(character, now)
+	local startedDodge = MovementSimulation.StepCharacter(character, LocalInput.Read(now), deltaTime, now, attacking)
 
 	if startedDodge then
 		self.Remotes.Dodge:Fire(startedDodge, now)
