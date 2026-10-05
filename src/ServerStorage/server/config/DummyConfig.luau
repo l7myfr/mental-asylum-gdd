@@ -20,6 +20,12 @@ return {
 			behaviour = "Smart",
 			melee = "Dagger",
 		},
+		FleeDummy = {
+			template = templates:WaitForChild("DodgeDummy"),
+			spawn = CFrame.new(-48, 4, -12),
+			respawnDelay = 3,
+			behaviour = "Flee",
+		},
 	},
 
 	behaviours = {
@@ -30,6 +36,19 @@ return {
 			homeStrength = 0.6,
 			faceNearestPlayer = true,
 			sightRange = 80,
+		},
+
+		Flee = {
+			sightRange = 80,
+			-- Starts running when a player is this close and only stops once they're beyond safeRadius.
+			fleeRadius = 18,
+			safeRadius = 30,
+			-- Dodges away when a player gets this close (if its dodge is ready).
+			dodgeRadius = 6,
+			-- Won't run further than this from home; bends back along the edge instead.
+			leashRadius = 70,
+			homeRadius = 2,
+			wallCheck = 6,
 		},
 
 		Smart = {
